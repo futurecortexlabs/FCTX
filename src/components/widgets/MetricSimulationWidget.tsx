@@ -155,6 +155,79 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
               );
             })}
           </div>
+
+          {/* Dynamic SVG Sensitivity Curve */}
+          {variables.length > 0 && formulas.length > 0 && (() => {
+            const primaryVar = variables[0];
+            const primaryFormula = formulas[formulas.length - 1];
+            const sampleSteps = 8;
+            const points: { x: number; y: number; val: number; result: number }[] = [];
+            const stepDelta = (primaryVar.max - primaryVar.min) / (sampleSteps - 1);
+
+            let maxRes = 1;
+            let minRes = 0;
+
+            for (let i = 0; i < sampleSteps; i++) {
+              const testVal = primaryVar.min + stepDelta * i;
+              const simValues = { ...varValues, [primaryVar.id]: testVal };
+              const res = calculateFormula(primaryFormula.calculate, simValues);
+              if (res > maxRes) maxRes = res;
+              if (res < minRes) minRes = res;
+              points.push({ x: i, y: 0, val: testVal, result: res });
+            }
+
+            const range = maxRes - minRes || 1;
+            const width = 460;
+            const height = 90;
+            const padding = 20;
+
+            const coords = points.map((p, idx) => {
+              const svgX = padding + (idx / (sampleSteps - 1)) * (width - padding * 2);
+              const normalizedY = (p.result - minRes) / range;
+              const svgY = height - padding - normalizedY * (height - padding * 2);
+              return { svgX, svgY };
+            });
+
+            const pathD = coords.reduce(
+              (acc, pt, idx) => (idx === 0 ? `M ${pt.svgX} ${pt.svgY}` : `${acc} L ${pt.svgX} ${pt.svgY}`),
+              ''
+            );
+
+            const areaD = `${pathD} L ${coords[coords.length - 1].svgX} ${height} L ${coords[0].svgX} ${height} Z`;
+
+            return (
+              <div className="mt-4 p-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
+                  <span>【感度曲線】{primaryVar.label} 変動に伴う {primaryFormula.label} 推移</span>
+                  <span className="text-cyan-400 font-bold">Dynamic Projection</span>
+                </div>
+                <div className="w-full overflow-hidden">
+                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-24 overflow-visible">
+                    <defs>
+                      <linearGradient id={`grad_${widget.id}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#818cf8" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Area fill */}
+                    <path d={areaD} fill={`url(#grad_${widget.id})`} />
+                    {/* Glowing Stroke */}
+                    <path d={pathD} fill="none" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
+                    {/* Sample Nodes */}
+                    {coords.map((pt, i) => (
+                      <circle
+                        key={i}
+                        cx={pt.svgX}
+                        cy={pt.svgY}
+                        r="3"
+                        className="fill-cyan-400 stroke-slate-950 stroke-2"
+                      />
+                    ))}
+                  </svg>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { soundEngine } from '../lib/soundEngine';
-import { Cpu, Download, RefreshCw, Settings, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Cpu, Download, History, RefreshCw, Settings, Volume2, VolumeX, Zap } from 'lucide-react';
 
 interface Props {
   widgetCount: number;
@@ -8,6 +8,7 @@ interface Props {
   onToggleSound: () => void;
   onOpenSettings: () => void;
   onOpenSnapshot: () => void;
+  onOpenHistory: () => void;
   onResetWorkspace: () => void;
 }
 
@@ -17,6 +18,7 @@ export const Header: React.FC<Props> = ({
   onToggleSound,
   onOpenSettings,
   onOpenSnapshot,
+  onOpenHistory,
   onResetWorkspace,
 }) => {
   return (
@@ -81,6 +83,18 @@ export const Header: React.FC<Props> = ({
           >
             <Download className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden sm:inline">保存 & 出力</span>
+          </button>
+
+          {/* History */}
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              onOpenHistory();
+            }}
+            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-lg transition-colors"
+            title="思考変形タイムライン"
+          >
+            <History className="w-4 h-4 text-purple-400" />
           </button>
 
           {/* Settings */}

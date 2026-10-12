@@ -17,6 +17,8 @@ import { SynapseBusViewer } from './components/SynapseBusViewer';
 import { WidgetContainer } from './components/WidgetContainer';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { SnapshotModal } from './components/modals/SnapshotModal';
+import { AddWidgetModal } from './components/modals/AddWidgetModal';
+import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDrawer';
 import { Layers, Plus, Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -35,9 +37,22 @@ export const App: React.FC = () => {
   );
   const [isSynthesizing, setIsSynthesizing] = useState(false);
 
+  // History timeline
+  const [history, setHistory] = useState<HistoryEntry[]>(() => [
+    {
+      id: 'init_hist',
+      timestamp: Date.now(),
+      prompt: '次世代AIスタートアップ成長戦略',
+      reasoning: '初期ワークスペース: 価格弾力性シミュレーションとGTM実行パイプラインを展開。',
+      widgetSnapshot: SHOWCASE_PRESETS[0].widgets,
+    },
+  ]);
+
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+  const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -73,13 +88,44 @@ export const App: React.FC = () => {
     setWidgets(newWidgets);
     setActiveReasoning(result.reasoning);
     setIsSynthesizing(false);
+
+    // Record into history timeline
+    setHistory((prev) => [
+      {
+        id: `hist_${Date.now()}`,
+        timestamp: Date.now(),
+        prompt,
+        reasoning: result.reasoning,
+        widgetSnapshot: newWidgets,
+      },
+      ...prev,
+    ]);
   };
 
   const handleApplyPreset = (preset: ThoughtPreset) => {
     soundEngine.playMorph();
     const pinnedWidgets = widgets.filter((w) => w.isPinned);
-    setWidgets([...pinnedWidgets, ...preset.widgets]);
+    const newWidgets = [...pinnedWidgets, ...preset.widgets];
+    setWidgets(newWidgets);
     setActiveReasoning(`プリセット「${preset.name}」をロードしました: ${preset.tagline}`);
+
+    // Record into history timeline
+    setHistory((prev) => [
+      {
+        id: `hist_${Date.now()}`,
+        timestamp: Date.now(),
+        prompt: preset.name,
+        reasoning: preset.tagline,
+        widgetSnapshot: newWidgets,
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleRestoreHistory = (entry: HistoryEntry) => {
+    soundEngine.playMorph();
+    setWidgets(entry.widgetSnapshot);
+    setActiveReasoning(`タイムライン「${entry.prompt}」の状態を復元しました。`);
   };
 
   const handleUpdateWidget = (updated: MorphicWidget) => {
@@ -140,6 +186,7 @@ export const App: React.FC = () => {
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
         onResetWorkspace={handleResetWorkspace}
       />
 
@@ -167,13 +214,26 @@ export const App: React.FC = () => {
               </span>
             </div>
 
-            <button
-              onClick={handleAddBlankNoteWidget}
-              className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 px-2.5 py-1 rounded-lg transition-colors font-medium"
-            >
-              <Plus className="w-3 h-3 text-indigo-400" />
-              メモを追加
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  soundEngine.playClick();
+                  setIsAddWidgetOpen(true);
+                }}
+                className="flex items-center gap-1 text-[11px] text-cyan-300 hover:text-cyan-200 bg-cyan-950/60 hover:bg-cyan-950 border border-cyan-800/60 px-2.5 py-1 rounded-lg transition-colors font-medium"
+              >
+                <Plus className="w-3 h-3 text-cyan-400" />
+                モジュール追加
+              </button>
+
+              <button
+                onClick={handleAddBlankNoteWidget}
+                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 bg-slate-900/80 hover:bg-slate-850 border border-slate-800 px-2.5 py-1 rounded-lg transition-colors font-medium"
+              >
+                <Plus className="w-3 h-3 text-indigo-400" />
+                メモを追加
+              </button>
+            </div>
           </div>
 
           {/* Dynamic Grid Layout */}
@@ -222,6 +282,19 @@ export const App: React.FC = () => {
         onClose={() => setIsSnapshotOpen(false)}
         widgets={widgets}
         onImportWidgets={(w) => setWidgets(w)}
+      />
+
+      <AddWidgetModal
+        isOpen={isAddWidgetOpen}
+        onClose={() => setIsAddWidgetOpen(false)}
+        onAddWidget={(w) => setWidgets((prev) => [w, ...prev])}
+      />
+
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={history}
+        onRestore={handleRestoreHistory}
       />
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { soundEngine } from '../lib/soundEngine';
 import { SHOWCASE_PRESETS } from '../lib/synthesizer';
 import type { ThoughtPreset } from '../types/morphic';
-import { Bot, Flame, Lightbulb, Loader2, Rocket, ShieldAlert, Sparkles, Wand2 } from 'lucide-react';
+import { Bot, Flame, Lightbulb, Loader2, Mic, MicOff, Rocket, ShieldAlert, Sparkles, Wand2 } from 'lucide-react';
 
 interface Props {
   onMorph: (prompt: string) => void;
@@ -18,6 +18,56 @@ export const CortexCommand: React.FC<Props> = ({
   activeReasoning,
 }) => {
   const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
+
+  const toggleListening = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('お使いのブラウザはWeb Speech API音声入力に対応していません。(Chrome/Edge等でご利用いただけます)');
+      return;
+    }
+
+    soundEngine.playClick();
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ja-JP';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput(transcript);
+          soundEngine.playMorph();
+          onMorph(transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +111,20 @@ export const CortexCommand: React.FC<Props> = ({
             placeholder="思考の断片や目的を入力してください... (例: 「新規SaaSの価格弾力性と獲得チャネル」「サイバーインシデント対策」)"
             className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
           />
+
+          {/* Voice Input Button */}
+          <button
+            type="button"
+            onClick={toggleListening}
+            className={`p-2 rounded-lg transition-colors mr-1 ${
+              isListening
+                ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/50'
+                : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60'
+            }`}
+            title={isListening ? '音声認識中... (クリックで停止)' : '音声で思考を入力 (Web Speech API)'}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
 
           <button
             type="submit"
