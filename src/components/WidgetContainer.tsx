@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   Compass,
+  Eye,
   FileText,
   GitBranch,
   Maximize2,
@@ -30,9 +31,16 @@ interface Props {
   onUpdate: (updated: MorphicWidget) => void;
   onRemove: (id: string) => void;
   onEmitOutput?: (key: string, value: number) => void;
+  onZenFocus?: (widget: MorphicWidget) => void;
 }
 
-export const WidgetContainer: React.FC<Props> = ({ widget, onUpdate, onRemove, onEmitOutput }) => {
+export const WidgetContainer: React.FC<Props> = ({
+  widget,
+  onUpdate,
+  onRemove,
+  onEmitOutput,
+  onZenFocus,
+}) => {
   const getIcon = () => {
     switch (widget.type) {
       case 'simulation':
@@ -122,6 +130,20 @@ export const WidgetContainer: React.FC<Props> = ({ widget, onUpdate, onRemove, o
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Zen Focus Mode */}
+          {onZenFocus && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onZenFocus(widget);
+              }}
+              className="p-1.5 text-slate-400 hover:text-cyan-300 hover:bg-cyan-950/40 rounded-lg transition-colors"
+              title="ゼン・没入フォーカスモード (全画面集中)"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {/* Size toggle */}
           <button
             onClick={toggleSize}

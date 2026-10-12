@@ -19,7 +19,9 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { SnapshotModal } from './components/modals/SnapshotModal';
 import { AddWidgetModal } from './components/modals/AddWidgetModal';
 import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDrawer';
-import { Layers, Plus, Sparkles } from 'lucide-react';
+import { CortexWhisperBar } from './components/CortexWhisperBar';
+import { analyzeWorkspaceState } from './lib/whisperEngine';
+import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [settings, setSettingsState] = useState<WorkspaceSettings>(loadSettings());
@@ -27,6 +29,8 @@ export const App: React.FC = () => {
     const saved = loadSavedWidgets();
     return saved && saved.length > 0 ? saved : SHOWCASE_PRESETS[0].widgets;
   });
+
+  const [zenWidget, setZenWidget] = useState<MorphicWidget | null>(null);
 
   const [busState, setBusState] = useState<Record<string, number | string>>({
     annual_profit: 6920000,
@@ -63,6 +67,19 @@ export const App: React.FC = () => {
   useEffect(() => {
     saveWidgets(widgets);
   }, [widgets]);
+
+  const whispers = analyzeWorkspaceState(widgets);
+
+  // Keyboard shortcut: Escape to close Zen mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZenWidget(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Handle Morphing Trigger
   const handleMorph = async (prompt: string) => {
@@ -254,6 +271,7 @@ export const App: React.FC = () => {
                   onUpdate={handleUpdateWidget}
                   onRemove={handleRemoveWidget}
                   onEmitOutput={handleEmitOutput}
+                  onZenFocus={(w) => setZenWidget(w)}
                 />
               ))}
             </div>
@@ -265,6 +283,50 @@ export const App: React.FC = () => {
       <footer className="border-t border-slate-800/60 py-4 px-6 text-center text-xs text-slate-400 font-mono">
         FCTX // Future Cortex Labs — Morphic Ambient Workspace © 2026
       </footer>
+
+      {/* Ambient Cortex Whisper Bar */}
+      <CortexWhisperBar whispers={whispers} onApplyAction={handleMorph} />
+
+      {/* Zen Focus Mode Overlay */}
+      {zenWidget && (
+        <div className="fixed inset-0 z-50 bg-[#06080e]/95 backdrop-blur-2xl flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="max-w-5xl w-full mx-auto flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <Eye className="w-5 h-5 text-cyan-400 animate-pulse" />
+              <div>
+                <span className="text-xs font-mono text-cyan-400 font-bold tracking-wider">[ZEN FOCUS MODE]</span>
+                <h2 className="text-base font-bold text-slate-100">{zenWidget.title}</h2>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                setZenWidget(null);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs text-slate-300 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+              <span>没入を終了 (Esc)</span>
+            </button>
+          </div>
+
+          <div className="max-w-5xl w-full mx-auto flex-1 py-6 overflow-y-auto">
+            <WidgetContainer
+              widget={zenWidget}
+              onUpdate={(updated) => {
+                handleUpdateWidget(updated);
+                setZenWidget(updated);
+              }}
+              onRemove={(id) => {
+                handleRemoveWidget(id);
+                setZenWidget(null);
+              }}
+              onEmitOutput={handleEmitOutput}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <SettingsModal

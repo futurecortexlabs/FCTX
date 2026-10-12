@@ -126,3 +126,15 @@ export interface CortexThoughtLog {
   reasoning: string;
   generatedWidgetTitles: string[];
 }
+
+export interface CortexWhisper {
+  id: string;
+  title: string;
+  message: string;
+  severity: 'insight' | 'warning' | 'opportunity';
+  actionLabel?: string;
+  actionPrompt?: string;
+}
+
+export type ScenarioType = 'base' | 'bull' | 'bear';
+

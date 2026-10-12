@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import type { MorphicWidget } from '../../types/morphic';
+import type { MorphicWidget, ScenarioType } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Sliders, Sparkles, TrendingUp } from 'lucide-react';
+import { GitFork, Sliders, Sparkles, TrendingUp } from 'lucide-react';
 
 interface Props {
   widget: MorphicWidget;
@@ -12,6 +12,15 @@ interface Props {
 export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEmitOutput }) => {
   const variables = widget.data.variables || [];
   const formulas = widget.data.formulas || [];
+
+  const [activeScenario, setActiveScenario] = useState<ScenarioType>('base');
+  const [baseValues] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    variables.forEach((v) => {
+      initial[v.id] = v.value;
+    });
+    return initial;
+  });
 
   const [varValues, setVarValues] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -73,14 +82,114 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
     return `${formatted} ${unit || ''}`;
   };
 
+  const getScenarioValues = (type: ScenarioType): Record<string, number> => {
+    const result: Record<string, number> = {};
+    variables.forEach((v) => {
+      const base = baseValues[v.id] ?? v.value;
+      let factor = 1.0;
+      if (type === 'bull') {
+        if (v.name.includes('churn') || v.name.includes('opex') || v.name.includes('cost')) factor = 0.8;
+        else factor = 1.35;
+      } else if (type === 'bear') {
+        if (v.name.includes('churn') || v.name.includes('opex') || v.name.includes('cost')) factor = 1.25;
+        else factor = 0.7;
+      }
+      const calculated = Math.min(v.max, Math.max(v.min, Math.round(base * factor * 10) / 10));
+      result[v.id] = calculated;
+    });
+    return result;
+  };
+
+  const handleSwitchScenario = (type: ScenarioType) => {
+    soundEngine.playClick();
+    setActiveScenario(type);
+    const scenarioVals = type === 'base' ? baseValues : getScenarioValues(type);
+    setVarValues(scenarioVals);
+    const updatedVars = variables.map((v) => ({ ...v, value: scenarioVals[v.id] ?? v.value }));
+    onUpdate({ ...widget, data: { ...widget.data, variables: updatedVars } });
+    if (widget.outputKey && onEmitOutput) {
+      const primaryResult = calculateFormula(formulas[formulas.length - 1]?.calculate || '', scenarioVals);
+      onEmitOutput(widget.outputKey, primaryResult);
+    }
+  };
+
+  const primaryFormula = formulas[formulas.length - 1];
+  const bearOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, getScenarioValues('bear')) : 0;
+  const baseOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, baseValues) : 0;
+  const bullOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, getScenarioValues('bull')) : 0;
+
   return (
     <div className="space-y-6">
+      {/* Multiverse Scenario Parallel Worlds Bar */}
+      <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+            <GitFork className="w-3.5 h-3.5 text-indigo-400" />
+            多元未来分岐 (Multiverse Branching)
+          </span>
+          <span className="text-[10px] text-slate-500 font-mono">3並行世界シミュレーション</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {/* Bear */}
+          <button
+            onClick={() => handleSwitchScenario('bear')}
+            className={`p-2 rounded-lg border text-left transition-all ${
+              activeScenario === 'bear'
+                ? 'bg-rose-950/50 border-rose-500/70 text-rose-200 ring-1 ring-rose-500/30'
+                : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div className="text-[10px] font-bold text-rose-400 flex items-center gap-1">
+              <span>🔴 Bear (弱気想定)</span>
+            </div>
+            <div className="text-xs font-mono font-bold mt-0.5">
+              {formatNumber(bearOutput, primaryFormula?.unit)}
+            </div>
+          </button>
+
+          {/* Base */}
+          <button
+            onClick={() => handleSwitchScenario('base')}
+            className={`p-2 rounded-lg border text-left transition-all ${
+              activeScenario === 'base'
+                ? 'bg-indigo-950/50 border-indigo-500/70 text-indigo-200 ring-1 ring-indigo-500/30'
+                : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div className="text-[10px] font-bold text-indigo-300 flex items-center gap-1">
+              <span>🔵 Base (基準計画)</span>
+            </div>
+            <div className="text-xs font-mono font-bold mt-0.5">
+              {formatNumber(baseOutput, primaryFormula?.unit)}
+            </div>
+          </button>
+
+          {/* Bull */}
+          <button
+            onClick={() => handleSwitchScenario('bull')}
+            className={`p-2 rounded-lg border text-left transition-all ${
+              activeScenario === 'bull'
+                ? 'bg-emerald-950/50 border-emerald-500/70 text-emerald-200 ring-1 ring-emerald-500/30'
+                : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <div className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+              <span>🟢 Bull (強気成長)</span>
+            </div>
+            <div className="text-xs font-mono font-bold mt-0.5">
+              {formatNumber(bullOutput, primaryFormula?.unit)}
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Parameter Sliders */}
       <div className="space-y-4">
         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
           <span className="flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-            動的コントロールパラメータ
+            動的コントロールパラメータ [{activeScenario.toUpperCase()}]
           </span>
           <span className="text-[10px] text-slate-500">スライダーで即時連動</span>
         </div>
