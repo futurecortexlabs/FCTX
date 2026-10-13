@@ -6,6 +6,7 @@ import {
   Compass,
   FileText,
   GitBranch,
+  GitFork,
   Plus,
   Scale,
   Sliders,
@@ -73,6 +74,14 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
       icon: <FileText className="w-4 h-4 text-amber-400" />,
       defaultTitle: 'シナプス思考ノート',
       defaultCategory: 'Notes',
+    },
+    {
+      type: 'decision_tree',
+      label: '因果ロジック意思決定ツリー',
+      desc: '確率分岐と結果損益による期待値(EMV)・下振れリスク自動計算',
+      icon: <GitFork className="w-4 h-4 text-cyan-300" />,
+      defaultTitle: '戦略意思決定ツリー',
+      defaultCategory: 'Causal Logic',
     },
     {
       type: 'ambient_audio',
@@ -148,6 +157,55 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
           content: '### 新規思考メモ\n- ここに仮説や課題を自由に書き留めてください。\n- #アイデア #仮説',
         };
         break;
+      case 'decision_tree':
+        data = {
+          rootNodeId: 'root',
+          decisionNodes: [
+            {
+              id: 'root',
+              title: '主要戦略選択',
+              type: 'decision',
+              cost: 0,
+              childrenIds: ['branch_a', 'branch_b'],
+            },
+            {
+              id: 'branch_a',
+              title: 'アグレッシブ拡大策',
+              type: 'decision',
+              cost: 2000000,
+              childrenIds: ['outcome_a1', 'outcome_a2'],
+            },
+            {
+              id: 'outcome_a1',
+              title: '市場浸透成功',
+              type: 'outcome',
+              probability: 0.65,
+              payoff: 12000000,
+            },
+            {
+              id: 'outcome_a2',
+              title: '競合参入・縮小',
+              type: 'outcome',
+              probability: 0.35,
+              payoff: -2000000,
+            },
+            {
+              id: 'branch_b',
+              title: '堅実オーガニック展開',
+              type: 'decision',
+              cost: 500000,
+              childrenIds: ['outcome_b'],
+            },
+            {
+              id: 'outcome_b',
+              title: '安定成長',
+              type: 'outcome',
+              probability: 1.0,
+              payoff: 4500000,
+            },
+          ],
+        };
+        break;
       case 'ambient_audio':
         data = {
           soundPreset: 'alpha',
@@ -164,7 +222,7 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
       description: templates.find((t) => t.type === selectedType)?.desc || '',
       iconName: selectedType,
       accentColor: 'indigo',
-      size: selectedType === 'simulation' || selectedType === 'tradeoff' ? 'wide' : 'normal',
+      size: selectedType === 'simulation' || selectedType === 'tradeoff' || selectedType === 'decision_tree' ? 'wide' : 'normal',
       createdAt: Date.now(),
       data,
     };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MorphicWidget } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Download, FileSpreadsheet, FileText, GitPullRequest, Globe, Upload, X } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, GitPullRequest, Globe, Printer, Upload, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -68,6 +68,14 @@ export const SnapshotModal: React.FC<Props> = ({
         md += `\n`;
       }
 
+      if (w.type === 'decision_tree' && w.data.decisionNodes) {
+        md += `### 意思決定ツリー (Causal Decision Logic)\n`;
+        w.data.decisionNodes.forEach((n) => {
+          md += `- **[${n.type.toUpperCase()}] ${n.title}**${n.probability !== undefined ? ` (確率: ${Math.round(n.probability * 100)}%)` : ''}${n.payoff !== undefined ? ` (結果損益: ¥${n.payoff.toLocaleString()})` : ''}${n.cost ? ` [コスト: ¥${n.cost.toLocaleString()}]` : ''}\n`;
+        });
+        md += `\n`;
+      }
+
       if (w.type === 'synapse_notes' && w.data.content) {
         md += `### メモ & 洞察\n`;
         md += `${w.data.content}\n\n`;
@@ -112,6 +120,14 @@ export const SnapshotModal: React.FC<Props> = ({
           contentHtml += `<div class="opt-card"><b>${opt.title}</b><p>メリット: ${opt.pros.join(', ')}</p><p>懸念: ${opt.cons.join(', ')}</p></div>`;
         });
         contentHtml += '</div></div>';
+      }
+
+      if (w.type === 'decision_tree' && w.data.decisionNodes) {
+        contentHtml += '<div class="section"><h4>意思決定ツリー構造</h4><ul>';
+        w.data.decisionNodes.forEach((n) => {
+          contentHtml += `<li><b>[${n.type.toUpperCase()}] ${n.title}</b> ${n.probability !== undefined ? ` (確率: ${Math.round(n.probability * 100)}%)` : ''} ${n.payoff !== undefined ? ` (損益: ¥${n.payoff.toLocaleString()})` : ''}</li>`;
+        });
+        contentHtml += '</ul></div>';
       }
 
       if (w.type === 'synapse_notes' && w.data.content) {
@@ -364,6 +380,21 @@ export const SnapshotModal: React.FC<Props> = ({
               <div>
                 <div className="text-xs font-bold text-slate-200">CSV出力</div>
                 <div className="text-[10px] text-slate-400 mt-0.5">Excel / Notion</div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                window.print();
+              }}
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all"
+              title="役員会議・資料用 A4 PDF印刷"
+            >
+              <Printer className="w-4 h-4 text-rose-400 flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-slate-200">印刷 / PDF</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">役員報告 A4印刷</div>
               </div>
             </button>
 

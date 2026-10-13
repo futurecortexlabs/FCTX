@@ -27,6 +27,7 @@ import { MatrixRadarWidget } from './widgets/MatrixRadarWidget';
 import { FlowPipelineWidget } from './widgets/FlowPipelineWidget';
 import { DecisionTradeoffWidget } from './widgets/DecisionTradeoffWidget';
 import { SynapseNoteWidget } from './widgets/SynapseNoteWidget';
+import { DecisionTreeWidget } from './widgets/DecisionTreeWidget';
 import { AmbientAudioWidget } from './widgets/AmbientAudioWidget';
 import { GenericCustomWidget } from './widgets/GenericCustomWidget';
 import { getWidgetInputPorts, getWidgetOutputPorts } from '../lib/synapseManager';
@@ -270,6 +271,9 @@ export const WidgetContainer: React.FC<Props> = ({
           )}
           {widget.type === 'synapse_notes' && (
             <SynapseNoteWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
+          )}
+          {widget.type === 'decision_tree' && (
+            <DecisionTreeWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
           )}
           {widget.type === 'ambient_audio' && <AmbientAudioWidget widget={widget} onUpdate={onUpdate} />}
           {widget.type === 'custom' && <GenericCustomWidget widget={widget} onUpdate={onUpdate} />}

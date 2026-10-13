@@ -109,6 +109,27 @@ export const PresentationDeckModal: React.FC<Props> = ({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const renderPresetIcon = (icon: string) => {
+    switch (icon) {
+      case 'Rocket':
+        return '🚀';
+      case 'ShieldAlert':
+        return '🛡️';
+      case 'Brain':
+        return '🧠';
+      case 'GitBranch':
+        return '⚡';
+      case 'GitFork':
+        return '🌳';
+      case 'Scale':
+        return '⚖️';
+      case 'Compass':
+        return '🧭';
+      default:
+        return icon.length <= 2 ? icon : '✨';
+    }
+  };
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
@@ -198,7 +219,7 @@ export const PresentationDeckModal: React.FC<Props> = ({
                       }}
                       className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-slate-800/80 transition-colors flex items-start gap-2 text-xs"
                     >
-                      <span className="text-base leading-none">{p.icon}</span>
+                      <span className="text-base leading-none">{renderPresetIcon(p.icon)}</span>
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-slate-200">{p.name}</div>
                         <div className="text-[10px] text-slate-400 truncate">{p.tagline}</div>

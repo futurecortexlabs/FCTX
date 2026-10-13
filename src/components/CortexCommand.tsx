@@ -8,6 +8,7 @@ import {
   Compass,
   Flame,
   GitBranch,
+  GitFork,
   Lightbulb,
   Loader2,
   Mic,
@@ -107,6 +108,8 @@ export const CortexCommand: React.FC<Props> = ({
         return <Brain className="w-3.5 h-3.5 text-purple-400" />;
       case 'GitBranch':
         return <GitBranch className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'GitFork':
+        return <GitFork className="w-3.5 h-3.5 text-cyan-400" />;
       case 'Scale':
         return <Scale className="w-3.5 h-3.5 text-amber-400" />;
       case 'Compass':

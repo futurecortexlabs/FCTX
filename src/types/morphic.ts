@@ -5,6 +5,7 @@ export type WidgetType =
   | 'matrix'          // 2D Matrix / Radar / Quadrant analysis
   | 'pipeline'        // Milestone flow / Kanban / execution pipeline
   | 'tradeoff'        // A/B Dilemma & weighted decision engine
+  | 'decision_tree'   // Causal logic tree & expected monetary value engine
   | 'synapse_notes'   // Living cognitive scratchpad with auto-connections
   | 'ambient_audio'   // Neural frequency / soundscape focus synthesizer
   | 'custom';         // Dynamically synthesized micro-tool
@@ -62,6 +63,17 @@ export interface TradeoffCriterion {
   weight: number; // 1-5
 }
 
+export interface DecisionNode {
+  id: string;
+  title: string;
+  type: 'decision' | 'chance' | 'outcome';
+  probability?: number; // 0.0 to 1.0 (for chance nodes)
+  payoff?: number; // Value in currency/points (+ or -)
+  cost?: number; // Upfront cost of choosing this branch
+  notes?: string;
+  childrenIds?: string[];
+}
+
 export interface MorphicWidget {
   id: string;
   title: string;
@@ -91,6 +103,9 @@ export interface MorphicWidget {
     stages?: PipelineStage[];
     criteria?: TradeoffCriterion[];
     options?: TradeoffOption[];
+    rootNodeId?: string;
+    decisionNodes?: DecisionNode[];
+    activePath?: string[];
     content?: string;
     soundPreset?: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace' | 'delta';
     volume?: number;

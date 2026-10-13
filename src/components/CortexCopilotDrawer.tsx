@@ -7,6 +7,8 @@ import {
   Brain,
   ChevronRight,
   Loader2,
+  Mic,
+  MicOff,
   Send,
   Sparkles,
   X,
@@ -50,7 +52,56 @@ export const CortexCopilotDrawer: React.FC<Props> = ({
   ]);
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const toggleListening = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('お使いのブラウザはWeb Speech API音声入力に対応していません。(Chrome/Edge等でご利用いただけます)');
+      return;
+    }
+
+    soundEngine.playClick();
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ja-JP';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) {
+          setInput(transcript);
+          handleSend(transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -380,6 +431,20 @@ ${userText}`,
           placeholder="思考の相談、目標達成のヒント、リスクについて質問..."
           className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-sans"
         />
+        {/* Voice Input Button */}
+        <button
+          type="button"
+          onClick={toggleListening}
+          className={`p-2.5 rounded-xl transition-colors flex-shrink-0 ${
+            isListening
+              ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/50'
+              : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800'
+          }`}
+          title={isListening ? '音声認識中... (クリックで停止)' : '音声でCopilotに質問 (Web Speech API)'}
+        >
+          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
+
         <button
           type="submit"
           disabled={!input.trim() || isThinking}

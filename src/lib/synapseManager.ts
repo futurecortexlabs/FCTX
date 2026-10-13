@@ -97,6 +97,32 @@ export function getWidgetOutputPorts(widget: MorphicWidget): SynapsePort[] {
       });
       break;
 
+    case 'decision_tree':
+      ports.push(
+        {
+          id: `${widget.id}_out_expected_value`,
+          name: 'tree_expected_value',
+          label: '全体期待値 (EMV)',
+          type: 'number',
+          direction: 'out',
+        },
+        {
+          id: `${widget.id}_out_risk_rate`,
+          name: 'tree_risk_rate',
+          label: '下振れ赤字リスク (%)',
+          type: 'number',
+          direction: 'out',
+        },
+        {
+          id: `${widget.id}_out_node_count`,
+          name: 'tree_node_count',
+          label: 'ツリーノード数',
+          type: 'number',
+          direction: 'out',
+        }
+      );
+      break;
+
     case 'custom':
       (widget.data.customFields || []).forEach((f) => {
         ports.push({
@@ -143,6 +169,16 @@ export function getWidgetInputPorts(widget: MorphicWidget): SynapsePort[] {
           type: 'number',
           direction: 'in',
         });
+      });
+      break;
+
+    case 'decision_tree':
+      ports.push({
+        id: `${widget.id}_in_root_cost`,
+        name: 'root_cost',
+        label: '初期投入コスト (上書き入力)',
+        type: 'number',
+        direction: 'in',
       });
       break;
 
@@ -235,6 +271,22 @@ export function propagateSynapseValues(
             newWidget = {
               ...newWidget,
               data: { ...newWidget.data, criteria: newCriteria },
+            };
+            modified = true;
+          }
+        }
+      } else if (newWidget.type === 'decision_tree') {
+        const nodes = newWidget.data.decisionNodes || [];
+        const rootId = newWidget.data.rootNodeId || 'root';
+        const rootIdx = nodes.findIndex((n) => n.id === rootId);
+        if (rootIdx !== -1 && link.targetKey === 'root_cost' && typeof finalValue === 'number') {
+          const clamped = Math.max(0, Math.round(finalValue));
+          if (nodes[rootIdx].cost !== clamped) {
+            const newNodes = [...nodes];
+            newNodes[rootIdx] = { ...newNodes[rootIdx], cost: clamped };
+            newWidget = {
+              ...newWidget,
+              data: { ...newWidget.data, decisionNodes: newNodes },
             };
             modified = true;
           }

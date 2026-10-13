@@ -78,6 +78,162 @@ export function synthesizeWidgetsFromPrompt(
     });
   }
 
+  // 1.5. Decision Tree / Logic Branching / Contingency / Causal Graph
+  else if (
+    p.includes('ツリー') ||
+    p.includes('tree') ||
+    p.includes('分岐') ||
+    p.includes('確率') ||
+    p.includes('不確実性') ||
+    p.includes('コンティンジェンシー') ||
+    p.includes('シナリオ分岐') ||
+    p.includes('期待値')
+  ) {
+    reasoning = '不確実性下のシナリオ分岐と確率的意思決定の要求を検知。因果ロジック意思決定ツリー(EMV算出)と影響評価マトリクス、コンティンジェンシー実行パイプラインを結晶化しました。';
+    widgets.push({
+      id: `tree_${timestamp}_1`,
+      title: '不確実性シナリオ & 意思決定ツリー',
+      type: 'decision_tree',
+      category: 'Causal Strategy',
+      description: '確率事象と結果損益から全体期待値(EMV)および下振れ赤字リスクをリアルタイム算出',
+      iconName: 'GitFork',
+      accentColor: 'cyan',
+      size: 'wide',
+      createdAt: timestamp,
+      outputKey: 'tree_expected_value',
+      data: {
+        rootNodeId: 'root',
+        decisionNodes: [
+          {
+            id: 'root',
+            title: '戦略的岐路: 次世代AIサービス基盤',
+            type: 'decision',
+            cost: 0,
+            childrenIds: ['branch_cloud', 'branch_onprem'],
+          },
+          {
+            id: 'branch_cloud',
+            title: '分散型エッジAI基盤への全面移行',
+            type: 'decision',
+            cost: 3500000,
+            childrenIds: ['chance_cloud'],
+          },
+          {
+            id: 'chance_cloud',
+            title: '市場トラフィック急増の確率',
+            type: 'chance',
+            childrenIds: ['out_cloud_success', 'out_cloud_mid'],
+          },
+          {
+            id: 'out_cloud_success',
+            title: 'グローバル大ヒット (超低レイテンシ達成)',
+            type: 'outcome',
+            probability: 0.7,
+            payoff: 24000000,
+          },
+          {
+            id: 'out_cloud_mid',
+            title: '想定通りの緩やかな成長',
+            type: 'outcome',
+            probability: 0.3,
+            payoff: 7000000,
+          },
+          {
+            id: 'branch_onprem',
+            title: '既存モノリシック基盤の延命・スケールアップ',
+            type: 'decision',
+            cost: 1200000,
+            childrenIds: ['chance_onprem'],
+          },
+          {
+            id: 'chance_onprem',
+            title: 'スパイク負荷発生時の障害確率',
+            type: 'chance',
+            childrenIds: ['out_onprem_fail', 'out_onprem_stable'],
+          },
+          {
+            id: 'out_onprem_fail',
+            title: 'サービス停止による解約急増 & 信用失墜',
+            type: 'outcome',
+            probability: 0.45,
+            payoff: -9000000,
+          },
+          {
+            id: 'out_onprem_stable',
+            title: '最低限の稼働維持 (開発停滞)',
+            type: 'outcome',
+            probability: 0.55,
+            payoff: 3000000,
+          },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `matrix_${timestamp}_2`,
+      title: '不確実性リスク & 影響度マトリクス',
+      type: 'matrix',
+      category: 'Risk Assessment',
+      description: '発生不確実性と事業インパクトを2軸プロット',
+      iconName: 'Compass',
+      accentColor: 'indigo',
+      size: 'normal',
+      createdAt: timestamp + 1,
+      data: {
+        matrixAxes: {
+          xLabel: '発生不確実性 (低 → 高)',
+          yLabel: '事業インパクト (軽微 → 甚大)',
+          quadrants: ['即時対応', '最優先注視 (Critical)', '受容可能', '定常監視'],
+        },
+        matrixItems: [
+          { id: 'i1', label: '急激なアクセス集中', x: 75, y: 85 },
+          { id: 'i2', label: '競合による無料プラン発表', x: 60, y: 70 },
+          { id: 'i3', label: 'サードパーティAPI障害', x: 40, y: 80 },
+          { id: 'i4', label: '開発人員の離職', x: 30, y: 60 },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `pipe_${timestamp}_3`,
+      title: 'コンティンジェンシー・プラン実行フロー',
+      type: 'pipeline',
+      category: 'Action Plan',
+      description: '事象発生時の迅速な切り替え手順',
+      iconName: 'GitBranch',
+      accentColor: 'emerald',
+      size: 'wide',
+      createdAt: timestamp + 2,
+      data: {
+        stages: [
+          {
+            id: 'stg1',
+            title: 'Phase 1: トリガー検知 & 評価',
+            items: [
+              { id: 't1', text: 'レイテンシおよびエラー率アラート基準設定', done: true, priority: 'high' },
+              { id: 't2', text: '意思決定権限者への即時エスカレーション', done: true, priority: 'high' },
+            ],
+          },
+          {
+            id: 'stg2',
+            title: 'Phase 2: 代替ルーティング発動',
+            items: [
+              { id: 't3', text: 'フォールバック先クラスタの起動確認', done: false, priority: 'high' },
+              { id: 't4', text: 'CDNキャッシュの積極的返却切り替え', done: false, priority: 'med' },
+            ],
+          },
+          {
+            id: 'stg3',
+            title: 'Phase 3: 収束 & 評価',
+            items: [
+              { id: 't5', text: '実測損益とEMV予測の乖離分析', done: false, priority: 'med' },
+            ],
+          },
+        ],
+      },
+    });
+  }
+
   // 2. Risk, Crisis, Security, Incident, Bug
   else if (
     p.includes('リスク') ||
@@ -1293,6 +1449,155 @@ export const SHOWCASE_PRESETS: ThoughtPreset[] = [
               items: [
                 { id: 'fr_i5', text: 'リード投資家とのバリュエーション合意 & 締結', done: false, priority: 'high' },
                 { id: 'fr_i6', text: '法務デューデリジェンス通過と登記・着金完了', done: false, priority: 'high' },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'preset_decision_tree',
+    name: '不確実性シナリオ & 意思決定ツリー',
+    tagline: '因果ロジックツリー × 期待値(EMV)自動計算 × コンティンジェンシー',
+    prompt: '次世代AIインフラ刷新の戦略分岐と不確実性リスクの意思決定ツリー',
+    icon: 'GitFork',
+    widgets: [
+      {
+        id: 'p_tree_1',
+        title: '戦略岐路: インフラアーキテクチャ意思決定ツリー',
+        type: 'decision_tree',
+        category: 'Causal Strategy',
+        description: '確率事象と結果損益から全体期待値(EMV)および下振れ赤字リスクをリアルタイム算出',
+        iconName: 'GitFork',
+        accentColor: 'cyan',
+        size: 'wide',
+        createdAt: 1,
+        outputKey: 'tree_expected_value',
+        data: {
+          rootNodeId: 'root',
+          decisionNodes: [
+            {
+              id: 'root',
+              title: '戦略的岐路: 次世代AIサービス基盤',
+              type: 'decision',
+              cost: 0,
+              childrenIds: ['branch_cloud', 'branch_onprem'],
+            },
+            {
+              id: 'branch_cloud',
+              title: '分散型エッジAI基盤への全面移行',
+              type: 'decision',
+              cost: 3500000,
+              childrenIds: ['chance_cloud'],
+            },
+            {
+              id: 'chance_cloud',
+              title: '市場トラフィック急増の確率',
+              type: 'chance',
+              childrenIds: ['out_cloud_success', 'out_cloud_mid'],
+            },
+            {
+              id: 'out_cloud_success',
+              title: 'グローバル大ヒット (超低レイテンシ達成)',
+              type: 'outcome',
+              probability: 0.7,
+              payoff: 24000000,
+            },
+            {
+              id: 'out_cloud_mid',
+              title: '想定通りの緩やかな成長',
+              type: 'outcome',
+              probability: 0.3,
+              payoff: 7000000,
+            },
+            {
+              id: 'branch_onprem',
+              title: '既存モノリシック基盤の延命・スケールアップ',
+              type: 'decision',
+              cost: 1200000,
+              childrenIds: ['chance_onprem'],
+            },
+            {
+              id: 'chance_onprem',
+              title: 'スパイク負荷発生時の障害確率',
+              type: 'chance',
+              childrenIds: ['out_onprem_fail', 'out_onprem_stable'],
+            },
+            {
+              id: 'out_onprem_fail',
+              title: 'サービス停止による解約急増 & 信用失墜',
+              type: 'outcome',
+              probability: 0.45,
+              payoff: -9000000,
+            },
+            {
+              id: 'out_onprem_stable',
+              title: '最低限の稼働維持 (開発停滞)',
+              type: 'outcome',
+              probability: 0.55,
+              payoff: 3000000,
+            },
+          ],
+        },
+      },
+      {
+        id: 'p_tree_matrix',
+        title: '不確実性リスク & 影響度マトリクス',
+        type: 'matrix',
+        category: 'Risk Assessment',
+        description: '発生不確実性と事業インパクトを2軸プロット',
+        iconName: 'Compass',
+        accentColor: 'indigo',
+        size: 'normal',
+        createdAt: 2,
+        data: {
+          matrixAxes: {
+            xLabel: '発生不確実性 (低 → 高)',
+            yLabel: '事業インパクト (軽微 → 甚大)',
+            quadrants: ['即時対応', '最優先注視 (Critical)', '受容可能', '定常監視'],
+          },
+          matrixItems: [
+            { id: 'ti1', label: '急激なアクセス集中 (スパイク)', x: 75, y: 85 },
+            { id: 'ti2', label: '競合による無料プラン発表', x: 60, y: 70 },
+            { id: 'ti3', label: 'サードパーティAPI障害', x: 40, y: 80 },
+            { id: 'ti4', label: '開発人員の離職', x: 30, y: 60 },
+          ],
+        },
+      },
+      {
+        id: 'p_tree_pipe',
+        title: 'コンティンジェンシー・プラン実行手順',
+        type: 'pipeline',
+        category: 'Action Plan',
+        description: '事象発生時の迅速な切り替え手順',
+        iconName: 'GitBranch',
+        accentColor: 'emerald',
+        size: 'wide',
+        createdAt: 3,
+        data: {
+          stages: [
+            {
+              id: 'pstg1',
+              title: 'Phase 1: トリガー検知 & 評価',
+              items: [
+                { id: 'pt1', text: 'レイテンシおよびエラー率アラート基準設定', done: true, priority: 'high' },
+                { id: 'pt2', text: '意思決定権限者への即時エスカレーション', done: true, priority: 'high' },
+              ],
+            },
+            {
+              id: 'pstg2',
+              title: 'Phase 2: 代替ルーティング発動',
+              items: [
+                { id: 'pt3', text: 'フォールバック先クラスタの起動確認', done: false, priority: 'high' },
+                { id: 'pt4', text: 'CDNキャッシュの積極的返却切り替え', done: false, priority: 'med' },
+              ],
+            },
+            {
+              id: 'pstg3',
+              title: 'Phase 3: 収束 & 評価',
+              items: [
+                { id: 'pt5', text: '実測損益とEMV予測の乖離分析', done: false, priority: 'med' },
               ],
             },
           ],
