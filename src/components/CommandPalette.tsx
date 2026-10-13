@@ -5,6 +5,7 @@ import type { ThoughtPreset, WorkspaceViewMode } from '../types/morphic';
 import {
   Brain,
   Download,
+  GitCompare,
   History,
   Keyboard,
   LayoutGrid,
@@ -31,6 +32,7 @@ interface Props {
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
+  onOpenScenarioComparator?: () => void;
   onOpenSettings: () => void;
   onOpenCopilot?: () => void;
   onOpenShortcutsHelp?: () => void;
@@ -50,6 +52,7 @@ export const CommandPalette: React.FC<Props> = ({
   onOpenSnapshot,
   onOpenHistory,
   onOpenPresentationDeck,
+  onOpenScenarioComparator,
   onOpenSettings,
   onOpenCopilot,
   onOpenShortcutsHelp,
@@ -102,6 +105,17 @@ export const CommandPalette: React.FC<Props> = ({
       icon: <Presentation className="w-4 h-4 text-indigo-400" />,
       run: () => onOpenPresentationDeck(),
     },
+    ...(onOpenScenarioComparator
+      ? [
+          {
+            id: 'scenario_comparator',
+            title: '多元並行世界シナリオ比較 (Multiverse Comparator)',
+            category: '意思決定・分析',
+            icon: <GitCompare className="w-4 h-4 text-cyan-400" />,
+            run: () => onOpenScenarioComparator(),
+          },
+        ]
+      : []),
     ...(onOpenCopilot
       ? [
           {

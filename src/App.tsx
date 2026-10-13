@@ -28,6 +28,7 @@ import { PresentationDeckModal } from './components/modals/PresentationDeckModal
 import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { CortexCopilotDrawer } from './components/CortexCopilotDrawer';
 import { ShortcutsHelpModal } from './components/modals/ShortcutsHelpModal';
+import { ScenarioComparatorModal } from './components/modals/ScenarioComparatorModal';
 import { WorkspaceTimeMachine } from './components/WorkspaceTimeMachine';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
@@ -88,6 +89,7 @@ export const App: React.FC = () => {
   const [isPresentationDeckOpen, setIsPresentationDeckOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
+  const [isScenarioComparatorOpen, setIsScenarioComparatorOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -169,6 +171,8 @@ export const App: React.FC = () => {
           setZenWidget(null);
         } else if (isPresentationDeckOpen) {
           setIsPresentationDeckOpen(false);
+        } else if (isScenarioComparatorOpen) {
+          setIsScenarioComparatorOpen(false);
         } else if (isCopilotOpen) {
           setIsCopilotOpen(false);
         } else if (isShortcutsHelpOpen) {
@@ -184,6 +188,10 @@ export const App: React.FC = () => {
           e.preventDefault();
           soundEngine.playClick();
           setIsShortcutsHelpOpen((prev) => !prev);
+        } else if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          soundEngine.playMorph();
+          setIsScenarioComparatorOpen((prev) => !prev);
         } else if (e.key === 'w' || e.key === 'W') {
           e.preventDefault();
           soundEngine.playMorph();
@@ -198,7 +206,15 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zenWidget, isPresentationDeckOpen, isCommandPaletteOpen, isWiringMode, isCopilotOpen, isShortcutsHelpOpen]);
+  }, [
+    zenWidget,
+    isPresentationDeckOpen,
+    isScenarioComparatorOpen,
+    isCommandPaletteOpen,
+    isWiringMode,
+    isCopilotOpen,
+    isShortcutsHelpOpen,
+  ]);
 
   // Handle Synapse Port Connection
   const handleSelectPort = (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => {
@@ -462,6 +478,7 @@ export const App: React.FC = () => {
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
+        onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onResetWorkspace={handleResetWorkspace}
@@ -691,6 +708,7 @@ export const App: React.FC = () => {
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
+        onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
@@ -713,6 +731,19 @@ export const App: React.FC = () => {
         onEmitOutput={handleEmitOutput}
         presets={SHOWCASE_PRESETS}
         onApplyPreset={handleApplyPreset}
+      />
+
+      {/* Multiverse Parallel Scenario Comparator Modal */}
+      <ScenarioComparatorModal
+        isOpen={isScenarioComparatorOpen}
+        onClose={() => setIsScenarioComparatorOpen(false)}
+        currentWidgets={widgets}
+        history={history}
+        onApplyScenario={(appliedWidgets, label) => {
+          pushUndoSnapshot(widgets, synapses);
+          setWidgets(appliedWidgets);
+          setActiveReasoning(`並行世界比較から「${label}」をワークスペースに適用しました。`);
+        }}
       />
 
       {/* Modals */}
@@ -773,6 +804,7 @@ export const App: React.FC = () => {
           onRedo={handleRedo}
           history={history}
           onRestoreHistory={handleRestoreHistory}
+          onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
         />
       )}
     </div>

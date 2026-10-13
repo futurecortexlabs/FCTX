@@ -18,6 +18,7 @@ export const ShortcutsHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
     { key: 'Space / → / ←', desc: 'プレゼンテーションモードのスライド送り / 戻し' },
     { key: 'W', desc: 'シナプス配線モードのトグル (モジュール間データ直結)' },
     { key: 'G', desc: 'グリッド表示 と 空間2Dキャンバス の切り替え' },
+    { key: 'M', desc: '多元並行世界シナリオ比較 (Multiverse Comparator)' },
     { key: '?', desc: 'このショートカットガイドを表示' },
   ];
 

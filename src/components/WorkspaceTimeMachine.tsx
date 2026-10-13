@@ -3,6 +3,7 @@ import { soundEngine } from '../lib/soundEngine';
 import type { HistoryEntry } from './modals/HistoryDrawer';
 import {
   Clock,
+  GitCompare,
   History,
   RotateCcw,
   RotateCw,
@@ -19,6 +20,7 @@ interface Props {
   onRedo: () => void;
   history: HistoryEntry[];
   onRestoreHistory: (entry: HistoryEntry) => void;
+  onOpenScenarioComparator?: () => void;
 }
 
 export const WorkspaceTimeMachine: React.FC<Props> = ({
@@ -30,6 +32,7 @@ export const WorkspaceTimeMachine: React.FC<Props> = ({
   onRedo,
   history,
   onRestoreHistory,
+  onOpenScenarioComparator,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [sliderIndex, setSliderIndex] = useState(0);
@@ -106,6 +109,21 @@ export const WorkspaceTimeMachine: React.FC<Props> = ({
                 <RotateCcw className="w-3 h-3" />
                 <span>この時点にワークスペースを復元</span>
               </button>
+
+              {onOpenScenarioComparator && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundEngine.playClick();
+                    setIsExpanded(false);
+                    onOpenScenarioComparator();
+                  }}
+                  className="w-full py-1.5 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-700/60 text-cyan-300 font-medium rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <GitCompare className="w-3 h-3 text-cyan-400" />
+                  <span>現在状態と並行世界比較 (Multiverse)</span>
+                </button>
+              )}
             </div>
           )}
         </div>

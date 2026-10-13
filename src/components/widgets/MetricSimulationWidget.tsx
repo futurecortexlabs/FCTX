@@ -1,7 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import type { MorphicWidget, ScenarioType } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Dices, GitFork, LineChart, RefreshCw, Sliders, Sparkles, TrendingUp } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import {
+  Dices,
+  GitFork,
+  LineChart,
+  RefreshCw,
+  Sliders,
+  Sparkles,
+  TrendingUp,
+  Zap,
+  Target,
+  ArrowRight,
+} from 'lucide-react';
 
 interface Props {
   widget: MorphicWidget;
@@ -13,8 +25,11 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
   const variables = widget.data.variables || [];
   const formulas = widget.data.formulas || [];
 
-  const [activeAnalysisMode, setActiveAnalysisMode] = useState<'curve' | 'monte_carlo'>('curve');
+  const [activeAnalysisMode, setActiveAnalysisMode] = useState<'curve' | 'monte_carlo' | 'auto_tune'>('curve');
   const [monteCarloSeed, setMonteCarloSeed] = useState(0);
+  const [tuneObjective, setTuneObjective] = useState<'maximize' | 'minimize'>('maximize');
+  const [selectedTuneFormulaId, setSelectedTuneFormulaId] = useState<string>(formulas[formulas.length - 1]?.id || '');
+  const [tuneRunCount, setTuneRunCount] = useState(0);
 
   const [activeScenario, setActiveScenario] = useState<ScenarioType>('base');
   const [baseValues] = useState<Record<string, number>>(() => {
@@ -153,6 +168,83 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
 
     return { trials, p10, p50, p90, minVal, maxVal, bins, maxBinCount };
   }, [activeAnalysisMode, varValues, monteCarloSeed, primaryFormula]);
+
+  // Compute Auto-Tune Optimal Scenario (500 stochastic samples)
+  const autoTuneResult = useMemo(() => {
+    if (activeAnalysisMode !== 'auto_tune' || variables.length === 0 || formulas.length === 0) return null;
+
+    const targetFormula = formulas.find((f) => f.id === selectedTuneFormulaId) || formulas[formulas.length - 1];
+    if (!targetFormula) return null;
+
+    const currentScore = calculateFormula(targetFormula.calculate, varValues);
+
+    let bestScore = currentScore;
+    let bestValues: Record<string, number> = { ...varValues };
+
+    const SAMPLES = 500;
+    for (let i = 0; i < SAMPLES; i++) {
+      const candidate: Record<string, number> = {};
+      variables.forEach((v) => {
+        const stepsCount = Math.floor((v.max - v.min) / v.step) || 1;
+        const randomStep = Math.floor(Math.random() * (stepsCount + 1));
+        const sampled = v.min + randomStep * v.step;
+        candidate[v.id] = Math.round(sampled * 100) / 100;
+      });
+
+      const score = calculateFormula(targetFormula.calculate, candidate);
+
+      if (tuneObjective === 'maximize') {
+        if (score > bestScore) {
+          bestScore = score;
+          bestValues = candidate;
+        }
+      } else {
+        if (score < bestScore) {
+          bestScore = score;
+          bestValues = candidate;
+        }
+      }
+    }
+
+    const delta = bestScore - currentScore;
+    const percentChange = currentScore !== 0 ? Math.round((delta / Math.abs(currentScore)) * 100) : 0;
+
+    return {
+      targetFormula,
+      currentScore,
+      bestScore,
+      bestValues,
+      delta,
+      percentChange,
+    };
+  }, [activeAnalysisMode, selectedTuneFormulaId, tuneObjective, tuneRunCount, varValues, variables, formulas]);
+
+  const handleApplyOptimal = () => {
+    if (!autoTuneResult) return;
+    soundEngine.playMorph();
+    try {
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+    } catch {
+      // ignore
+    }
+
+    setVarValues(autoTuneResult.bestValues);
+
+    const updatedVars = variables.map((v) => ({
+      ...v,
+      value: autoTuneResult.bestValues[v.id] ?? v.value,
+    }));
+
+    const updatedWidget = {
+      ...widget,
+      data: { ...widget.data, variables: updatedVars },
+    };
+    onUpdate(updatedWidget);
+
+    if (widget.outputKey && onEmitOutput) {
+      onEmitOutput(widget.outputKey, autoTuneResult.bestScore);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -310,7 +402,7 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
               <div className="mt-4 p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2.5">
                 {/* Mode Selector Tabs */}
                 <div className="flex items-center justify-between text-[11px] font-mono border-b border-slate-800/80 pb-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <button
                       type="button"
                       onClick={() => {
@@ -342,6 +434,22 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
                       <Dices className="w-3 h-3 text-cyan-400" />
                       <span>モンテカルロ試算 (100試行)</span>
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playClick();
+                        setActiveAnalysisMode('auto_tune');
+                      }}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                        activeAnalysisMode === 'auto_tune'
+                          ? 'bg-amber-950 text-amber-300 font-bold border border-amber-700/60 shadow-sm shadow-amber-500/20'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Zap className="w-3 h-3 text-amber-400" />
+                      <span>AI 最適解探索 (Auto-Tune)</span>
+                    </button>
                   </div>
 
                   {activeAnalysisMode === 'monte_carlo' && (
@@ -356,6 +464,21 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
                     >
                       <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
                       <span>再試行</span>
+                    </button>
+                  )}
+
+                  {activeAnalysisMode === 'auto_tune' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playSynapsePulse();
+                        setTuneRunCount((c) => c + 1);
+                      }}
+                      className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 bg-amber-950/40 hover:bg-amber-950 px-2 py-0.5 rounded border border-amber-800/50 transition-colors"
+                      title="500回の確率空間探索を再実行"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
+                      <span>再探索</span>
                     </button>
                   )}
                 </div>
@@ -486,6 +609,133 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
                         })}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Tab 3: AI Auto-Tune Optimizer */}
+                {activeAnalysisMode === 'auto_tune' && autoTuneResult && (
+                  <div className="space-y-3 pt-1">
+                    {/* Controls Bar: Target Formula & Maximize/Minimize */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-900/90 rounded-lg border border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1 font-sans">
+                          <Target className="w-3 h-3 text-amber-400" />
+                          目的指標:
+                        </span>
+                        <select
+                          value={selectedTuneFormulaId}
+                          onChange={(e) => {
+                            setSelectedTuneFormulaId(e.target.value);
+                            soundEngine.playClick();
+                          }}
+                          className="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-500"
+                        >
+                          {formulas.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTuneObjective('maximize');
+                            soundEngine.playClick();
+                          }}
+                          className={`px-2 py-0.5 rounded font-bold transition-all ${
+                            tuneObjective === 'maximize'
+                              ? 'bg-amber-600/40 text-amber-300 border border-amber-500/50'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          最大化
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTuneObjective('minimize');
+                            soundEngine.playClick();
+                          }}
+                          className={`px-2 py-0.5 rounded font-bold transition-all ${
+                            tuneObjective === 'minimize'
+                              ? 'bg-amber-600/40 text-amber-300 border border-amber-500/50'
+                              : 'text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          最小化
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Result Comparison Card */}
+                    <div className="grid grid-cols-2 gap-2 bg-gradient-to-r from-amber-950/20 via-slate-900/60 to-indigo-950/20 p-2.5 rounded-lg border border-amber-700/30">
+                      <div>
+                        <span className="text-[10px] text-slate-400 block font-mono">現在値</span>
+                        <span className="text-sm font-bold font-mono text-slate-300">
+                          {formatNumber(autoTuneResult.currentScore, autoTuneResult.targetFormula.unit)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[10px] text-amber-400 font-mono font-bold">500サンプル最適解</span>
+                          <span
+                            className={`text-[10px] font-mono px-1 py-0.2 rounded font-bold ${
+                              autoTuneResult.percentChange >= 0
+                                ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-700/50'
+                                : 'bg-rose-950/80 text-rose-400 border border-rose-700/50'
+                            }`}
+                          >
+                            {autoTuneResult.percentChange >= 0
+                              ? `+${autoTuneResult.percentChange}%`
+                              : `${autoTuneResult.percentChange}%`}
+                          </span>
+                        </div>
+                        <span className="text-base font-extrabold font-mono text-amber-300">
+                          {formatNumber(autoTuneResult.bestScore, autoTuneResult.targetFormula.unit)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Parameter Recommended Adjustments List */}
+                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                      {variables.map((v) => {
+                        const current = varValues[v.id] ?? v.value;
+                        const optimal = autoTuneResult.bestValues[v.id] ?? current;
+                        const isDiff = current !== optimal;
+
+                        return (
+                          <div
+                            key={v.id}
+                            className={`flex items-center justify-between p-1.5 rounded text-xs font-mono border transition-all ${
+                              isDiff
+                                ? 'bg-amber-950/30 border-amber-800/40 text-amber-200'
+                                : 'bg-slate-900/40 border-slate-800/60 text-slate-400'
+                            }`}
+                          >
+                            <span className="truncate max-w-[130px] font-sans text-[11px]">{v.label}</span>
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-slate-400">{current}</span>
+                              <ArrowRight className="w-3 h-3 text-amber-400" />
+                              <span className="font-bold text-amber-300">{optimal}</span>
+                              <span className="text-[10px] text-slate-500 font-sans">{v.unit}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Apply Button */}
+                    <button
+                      type="button"
+                      onClick={handleApplyOptimal}
+                      className="w-full py-2 px-3 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white font-bold text-xs rounded-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 transition-all transform active:scale-98"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-200" />
+                      <span>最適パラメータをワークスペースに適用</span>
+                    </button>
                   </div>
                 )}
               </div>

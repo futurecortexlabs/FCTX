@@ -5,6 +5,7 @@ import {
   Brain,
   Cpu,
   Download,
+  GitCompare,
   HelpCircle,
   History,
   LayoutGrid,
@@ -26,6 +27,7 @@ interface Props {
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
+  onOpenScenarioComparator?: () => void;
   onOpenCopilot?: () => void;
   onOpenShortcutsHelp?: () => void;
   onResetWorkspace: () => void;
@@ -43,6 +45,7 @@ export const Header: React.FC<Props> = ({
   onOpenSnapshot,
   onOpenHistory,
   onOpenPresentationDeck,
+  onOpenScenarioComparator,
   onOpenCopilot,
   onOpenShortcutsHelp,
   onResetWorkspace,
@@ -167,6 +170,21 @@ export const Header: React.FC<Props> = ({
             <Presentation className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden sm:inline">プレゼン</span>
           </button>
+
+          {/* Multiverse Parallel Scenario Comparator */}
+          {onOpenScenarioComparator && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onOpenScenarioComparator();
+              }}
+              className="flex items-center gap-1.5 text-xs bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-700/60 text-cyan-200 hover:text-white px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+              title="多元並行世界シナリオ比較 (現在・履歴・プリセット間のKPI・差分分析)"
+            >
+              <GitCompare className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span className="hidden sm:inline">並行比較</span>
+            </button>
+          )}
 
           {/* Export / Snapshot */}
           <button
