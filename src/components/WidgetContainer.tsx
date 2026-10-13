@@ -259,10 +259,18 @@ export const WidgetContainer: React.FC<Props> = ({
           {widget.type === 'simulation' && (
             <MetricSimulationWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
           )}
-          {widget.type === 'matrix' && <MatrixRadarWidget widget={widget} onUpdate={onUpdate} />}
-          {widget.type === 'pipeline' && <FlowPipelineWidget widget={widget} onUpdate={onUpdate} />}
-          {widget.type === 'tradeoff' && <DecisionTradeoffWidget widget={widget} onUpdate={onUpdate} />}
-          {widget.type === 'synapse_notes' && <SynapseNoteWidget widget={widget} onUpdate={onUpdate} />}
+          {widget.type === 'matrix' && (
+            <MatrixRadarWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
+          )}
+          {widget.type === 'pipeline' && (
+            <FlowPipelineWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
+          )}
+          {widget.type === 'tradeoff' && (
+            <DecisionTradeoffWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
+          )}
+          {widget.type === 'synapse_notes' && (
+            <SynapseNoteWidget widget={widget} onUpdate={onUpdate} onEmitOutput={onEmitOutput} />
+          )}
           {widget.type === 'ambient_audio' && <AmbientAudioWidget widget={widget} onUpdate={onUpdate} />}
           {widget.type === 'custom' && <GenericCustomWidget widget={widget} onUpdate={onUpdate} />}
         </div>

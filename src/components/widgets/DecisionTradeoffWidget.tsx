@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MorphicWidget } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
 import { Award, Minus, Plus, Scale, ThumbsDown, ThumbsUp } from 'lucide-react';
@@ -6,9 +6,10 @@ import { Award, Minus, Plus, Scale, ThumbsDown, ThumbsUp } from 'lucide-react';
 interface Props {
   widget: MorphicWidget;
   onUpdate: (updated: MorphicWidget) => void;
+  onEmitOutput?: (key: string, value: number) => void;
 }
 
-export const DecisionTradeoffWidget: React.FC<Props> = ({ widget, onUpdate }) => {
+export const DecisionTradeoffWidget: React.FC<Props> = ({ widget, onUpdate, onEmitOutput }) => {
   const criteria = widget.data.criteria || [];
   const options = widget.data.options || [];
 
@@ -84,6 +85,12 @@ export const DecisionTradeoffWidget: React.FC<Props> = ({ widget, onUpdate }) =>
     .sort((a, b) => b.totalScore - a.totalScore);
 
   const winningId = rankedOptions[0]?.id;
+
+  // Emit winning score to Synapse Bus
+  useEffect(() => {
+    if (!onEmitOutput || rankedOptions.length === 0) return;
+    onEmitOutput('winning_score', rankedOptions[0].totalScore);
+  }, [rankedOptions, onEmitOutput]);
 
   return (
     <div className="space-y-6">

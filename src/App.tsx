@@ -661,6 +661,8 @@ export const App: React.FC = () => {
         onUpdateWidget={handleUpdateWidget}
         onRemoveWidget={handleRemoveWidget}
         onEmitOutput={handleEmitOutput}
+        presets={SHOWCASE_PRESETS}
+        onApplyPreset={handleApplyPreset}
       />
 
       {/* Modals */}
