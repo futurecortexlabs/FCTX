@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Orbit,
   Plus,
+  Presentation,
   Rocket,
   Search,
   Settings,
@@ -27,6 +28,7 @@ interface Props {
   viewMode: WorkspaceViewMode;
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
+  onOpenPresentationDeck: () => void;
   onOpenSettings: () => void;
   onToggleSound: () => void;
   soundEnabled: boolean;
@@ -43,6 +45,7 @@ export const CommandPalette: React.FC<Props> = ({
   viewMode,
   onOpenSnapshot,
   onOpenHistory,
+  onOpenPresentationDeck,
   onOpenSettings,
   onToggleSound,
   soundEnabled,
@@ -85,6 +88,13 @@ export const CommandPalette: React.FC<Props> = ({
       category: '履歴',
       icon: <History className="w-4 h-4 text-amber-400" />,
       run: () => onOpenHistory(),
+    },
+    {
+      id: 'presentation_deck',
+      title: '生きた対話型プレゼンテーションモード (全画面スライド)',
+      category: 'プレゼンテーション',
+      icon: <Presentation className="w-4 h-4 text-indigo-400" />,
+      run: () => onOpenPresentationDeck(),
     },
     {
       id: 'export',

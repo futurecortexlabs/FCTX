@@ -24,6 +24,7 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { SnapshotModal } from './components/modals/SnapshotModal';
 import { AddWidgetModal } from './components/modals/AddWidgetModal';
 import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDrawer';
+import { PresentationDeckModal } from './components/modals/PresentationDeckModal';
 import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { propagateSynapseValues } from './lib/synapseManager';
@@ -77,6 +78,7 @@ export const App: React.FC = () => {
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isPresentationDeckOpen, setIsPresentationDeckOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -105,7 +107,7 @@ export const App: React.FC = () => {
     }
   }, [busState, synapses]);
 
-  // Keyboard shortcuts: Cmd+K / Ctrl+K for Command Palette, Escape for Zen
+  // Keyboard shortcuts: Cmd+K / Ctrl+K for Command Palette, Escape for Zen/Deck
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -115,6 +117,8 @@ export const App: React.FC = () => {
       } else if (e.key === 'Escape') {
         if (zenWidget) {
           setZenWidget(null);
+        } else if (isPresentationDeckOpen) {
+          setIsPresentationDeckOpen(false);
         } else if (isCommandPaletteOpen) {
           setIsCommandPaletteOpen(false);
         } else if (isWiringMode) {
@@ -125,7 +129,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zenWidget, isCommandPaletteOpen, isWiringMode]);
+  }, [zenWidget, isPresentationDeckOpen, isCommandPaletteOpen, isWiringMode]);
 
   // Handle Synapse Port Connection
   const handleSelectPort = (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => {
@@ -298,6 +302,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onResetWorkspace={handleResetWorkspace}
         isWiringMode={isWiringMode}
         onToggleWiring={() => {
@@ -513,6 +518,7 @@ export const App: React.FC = () => {
         viewMode={viewMode}
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onToggleSound={() => {
           const nextVal = !settings.soundEnabled;
@@ -521,6 +527,16 @@ export const App: React.FC = () => {
           saveSettings(updated);
         }}
         soundEnabled={settings.soundEnabled}
+      />
+
+      {/* Presentation Deck Modal */}
+      <PresentationDeckModal
+        isOpen={isPresentationDeckOpen}
+        onClose={() => setIsPresentationDeckOpen(false)}
+        widgets={widgets}
+        onUpdateWidget={handleUpdateWidget}
+        onRemoveWidget={handleRemoveWidget}
+        onEmitOutput={handleEmitOutput}
       />
 
       {/* Modals */}

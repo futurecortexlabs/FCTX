@@ -7,6 +7,7 @@ import {
   History,
   LayoutGrid,
   Orbit,
+  Presentation,
   RefreshCw,
   Settings,
   Share2,
@@ -22,6 +23,7 @@ interface Props {
   onOpenSettings: () => void;
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
+  onOpenPresentationDeck: () => void;
   onResetWorkspace: () => void;
   isWiringMode: boolean;
   onToggleWiring: () => void;
@@ -36,6 +38,7 @@ export const Header: React.FC<Props> = ({
   onOpenSettings,
   onOpenSnapshot,
   onOpenHistory,
+  onOpenPresentationDeck,
   onResetWorkspace,
   isWiringMode,
   onToggleWiring,
@@ -129,6 +132,19 @@ export const Header: React.FC<Props> = ({
             title={soundEnabled ? '音響効果: ON (クリックでミュート)' : '音響効果: ミュート (クリックで有効化)'}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
+
+          {/* Presentation Deck Mode */}
+          <button
+            onClick={() => {
+              soundEngine.playMorph();
+              onOpenPresentationDeck();
+            }}
+            className="flex items-center gap-1.5 text-xs bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 hover:text-white px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+            title="生きた対話型プレゼンテーションモード (全画面スライド)"
+          >
+            <Presentation className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">プレゼン</span>
           </button>
 
           {/* Export / Snapshot */}
