@@ -12,6 +12,8 @@ export const ShortcutsHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const shortcuts = [
     { key: 'Cmd / Ctrl + K', desc: 'コマンドパレット起動 (全機能・プリセット検索)' },
+    { key: 'Cmd / Ctrl + Z', desc: 'ワークスペースの変更を元に戻す (Undo)' },
+    { key: 'Cmd / Ctrl + Y', desc: '元に戻した変更をやり直す (Redo)' },
     { key: 'Esc', desc: '没入ゼンモード / プレゼン / モーダルの終了' },
     { key: 'Space / → / ←', desc: 'プレゼンテーションモードのスライド送り / 戻し' },
     { key: 'W', desc: 'シナプス配線モードのトグル (モジュール間データ直結)' },

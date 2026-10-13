@@ -28,6 +28,7 @@ import { PresentationDeckModal } from './components/modals/PresentationDeckModal
 import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { CortexCopilotDrawer } from './components/CortexCopilotDrawer';
 import { ShortcutsHelpModal } from './components/modals/ShortcutsHelpModal';
+import { WorkspaceTimeMachine } from './components/WorkspaceTimeMachine';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
 import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
@@ -75,6 +76,10 @@ export const App: React.FC = () => {
     },
   ]);
 
+  // Undo / Redo state stacks
+  const [undoStack, setUndoStack] = useState<{ widgets: MorphicWidget[]; synapses: SynapseLink[] }[]>([]);
+  const [redoStack, setRedoStack] = useState<{ widgets: MorphicWidget[]; synapses: SynapseLink[] }[]>([]);
+
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
@@ -111,13 +116,51 @@ export const App: React.FC = () => {
     }
   }, [busState, synapses]);
 
-  // Keyboard shortcuts: Cmd+K / Ctrl+K, Escape, ?, W, G
+  // Undo / Redo Engine
+  const pushUndoSnapshot = (w: MorphicWidget[], s: SynapseLink[]) => {
+    setUndoStack((prev) => [...prev.slice(-30), { widgets: w, synapses: s }]);
+    setRedoStack([]);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    soundEngine.playUndo();
+    const previous = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, { widgets, synapses }]);
+    setWidgets(previous.widgets);
+    setSynapses(previous.synapses);
+    setActiveReasoning('前のワークスペース状態へUndo復元しました。');
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    soundEngine.playRedo();
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev, { widgets, synapses }]);
+    setWidgets(next.widgets);
+    setSynapses(next.synapses);
+    setActiveReasoning('ワークスペース変更をRedo再適用しました。');
+  };
+
+  // Keyboard shortcuts: Cmd+K / Ctrl+K, Escape, ?, W, G, Undo (Cmd+Z), Redo (Cmd+Y)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeTag = document.activeElement?.tagName?.toLowerCase();
       const isInputActive = activeTag === 'input' || activeTag === 'textarea';
 
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        handleRedo();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         soundEngine.playClick();
         setIsCommandPaletteOpen((prev) => !prev);
@@ -204,6 +247,7 @@ export const App: React.FC = () => {
 
   // Handle Morphing Trigger
   const handleMorph = async (prompt: string) => {
+    pushUndoSnapshot(widgets, synapses);
     setIsSynthesizing(true);
     soundEngine.playMorph();
 
@@ -241,6 +285,7 @@ export const App: React.FC = () => {
   };
 
   const handleApplyPreset = (preset: ThoughtPreset) => {
+    pushUndoSnapshot(widgets, synapses);
     soundEngine.playMorph();
     const pinnedWidgets = widgets.filter((w) => w.isPinned);
     const newWidgets = [...pinnedWidgets, ...preset.widgets];
@@ -261,6 +306,7 @@ export const App: React.FC = () => {
   };
 
   const handleRestoreHistory = (entry: HistoryEntry) => {
+    pushUndoSnapshot(widgets, synapses);
     soundEngine.playMorph();
     setWidgets(entry.widgetSnapshot);
     setActiveReasoning(`タイムライン「${entry.prompt}」の状態を復元しました。`);
@@ -271,12 +317,14 @@ export const App: React.FC = () => {
   };
 
   const handleRemoveWidget = (id: string) => {
+    pushUndoSnapshot(widgets, synapses);
     setWidgets((prev) => prev.filter((w) => w.id !== id));
     // Remove links connected to this widget
     setSynapses((prev) => prev.filter((s) => s.sourceWidgetId !== id && s.targetWidgetId !== id));
   };
 
   const handleDuplicateWidget = (widget: MorphicWidget) => {
+    pushUndoSnapshot(widgets, synapses);
     soundEngine.playMorph();
     const cloned: MorphicWidget = {
       ...JSON.parse(JSON.stringify(widget)),
@@ -292,6 +340,7 @@ export const App: React.FC = () => {
   };
 
   const handleAutoWireSynapses = () => {
+    pushUndoSnapshot(widgets, synapses);
     soundEngine.playMorph();
     const generated = autoGenerateSynapses(widgets);
     if (generated.length === 0) {
@@ -311,6 +360,7 @@ export const App: React.FC = () => {
   };
 
   const handleClearSynapses = () => {
+    pushUndoSnapshot(widgets, synapses);
     soundEngine.playClick();
     setSynapses([]);
     setActiveReasoning('すべてのシナプス配線を解除しました。');
@@ -711,6 +761,20 @@ export const App: React.FC = () => {
         isOpen={isShortcutsHelpOpen}
         onClose={() => setIsShortcutsHelpOpen(false)}
       />
+
+      {/* Workspace Time Machine & Global Undo/Redo Floating HUD */}
+      {!zenWidget && !isPresentationDeckOpen && (
+        <WorkspaceTimeMachine
+          canUndo={undoStack.length > 0}
+          canRedo={redoStack.length > 0}
+          undoCount={undoStack.length}
+          redoCount={redoStack.length}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          history={history}
+          onRestoreHistory={handleRestoreHistory}
+        />
+      )}
     </div>
   );
 };

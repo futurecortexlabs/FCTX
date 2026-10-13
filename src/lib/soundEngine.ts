@@ -255,6 +255,64 @@ class SoundEngine {
   public getIsAmbientPlaying(): boolean {
     return this.isAmbientPlaying;
   }
+
+  // Play auditory feedback when undoing state
+  public playUndo() {
+    if (!this.isEnabled) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Play auditory feedback when redoing state
+  public playRedo() {
+    if (!this.isEnabled) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Adaptive Bio-reactive modulation of ambient filter
+  public modulateAmbient(intensity: number) {
+    if (!this.filterNode || !this.ctx) return;
+    try {
+      const now = this.ctx.currentTime;
+      const targetFreq = 400 + Math.min(1, Math.max(0, intensity)) * 1200;
+      this.filterNode.frequency.setTargetAtTime(targetFreq, now, 0.5);
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const soundEngine = new SoundEngine();
