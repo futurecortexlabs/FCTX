@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MorphicWidget } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Download, FileText, Globe, Upload, X } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, GitPullRequest, Globe, Upload, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -165,6 +165,96 @@ export const SnapshotModal: React.FC<Props> = ({
 </html>`;
   };
 
+  const generateCsvData = (): string => {
+    let csv = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+    csv += 'Module ID,Category,Title,Item Key,Item Label,Value / Status,Notes\n';
+
+    widgets.forEach((w) => {
+      if (w.type === 'simulation' && w.data.variables) {
+        w.data.variables.forEach((v) => {
+          csv += `"${w.id}","${w.category}","${w.title}","${v.name}","${v.label}","${v.value} ${v.unit || ''}","Variable Parameter"\n`;
+        });
+      }
+      if (w.type === 'pipeline' && w.data.stages) {
+        w.data.stages.forEach((s) => {
+          s.items.forEach((item) => {
+            csv += `"${w.id}","${w.category}","${w.title}","${item.id}","[${s.title}] ${item.text}","${item.done ? 'DONE' : 'TODO'}","Priority: ${item.priority || 'med'}"\n`;
+          });
+        });
+      }
+      if (w.type === 'tradeoff' && w.data.options) {
+        w.data.options.forEach((opt) => {
+          csv += `"${w.id}","${w.category}","${w.title}","${opt.id}","${opt.title}","Pros: ${opt.pros.join('; ')}","Cons: ${opt.cons.join('; ')}"\n`;
+        });
+      }
+      if (w.type === 'matrix' && w.data.matrixItems) {
+        w.data.matrixItems.forEach((m) => {
+          csv += `"${w.id}","${w.category}","${w.title}","${m.id}","${m.label}","X: ${m.x}%, Y: ${m.y}%","Matrix Node"\n`;
+        });
+      }
+      if (w.type === 'synapse_notes' && w.data.content) {
+        csv += `"${w.id}","${w.category}","${w.title}","content","Note Content","${w.data.content.replace(/"/g, '""')}","Cognitive Pad"\n`;
+      }
+    });
+
+    return csv;
+  };
+
+  const generateGithubIssueTemplate = (): string => {
+    let issue = `## 🎯 概要 & 意思決定コンテキスト\n`;
+    issue += `*FCTX // Morphic Workspace にて自動生成された実行仕様書*\n\n`;
+
+    const pipelines = widgets.filter((w) => w.type === 'pipeline');
+    if (pipelines.length > 0) {
+      issue += `### ✅ 実行タスク一覧 (Action Checklist)\n`;
+      pipelines.forEach((p) => {
+        issue += `#### ${p.title}\n`;
+        (p.data.stages || []).forEach((stg) => {
+          issue += `##### ${stg.title}\n`;
+          stg.items.forEach((item) => {
+            issue += `- [${item.done ? 'x' : ' '}] ${item.text} \`${item.priority?.toUpperCase() || 'MED'}\`\n`;
+          });
+        });
+        issue += `\n`;
+      });
+    }
+
+    const sims = widgets.filter((w) => w.type === 'simulation');
+    if (sims.length > 0) {
+      issue += `### 📊 前提条件 & シミュレーション変数\n`;
+      sims.forEach((s) => {
+        issue += `| パラメータ | 設定値 |\n| :--- | :--- |\n`;
+        (s.data.variables || []).forEach((v) => {
+          issue += `| ${v.label} | ${v.value.toLocaleString()} ${v.unit || ''} |\n`;
+        });
+        issue += `\n`;
+      });
+    }
+
+    return issue;
+  };
+
+  const handleDownloadCsv = () => {
+    soundEngine.playClick();
+    const csv = generateCsvData();
+    const dataStr = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `fctx_morphic_data_${Date.now()}.csv`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const [copiedIssue, setCopiedIssue] = useState(false);
+  const handleCopyGithubIssue = () => {
+    soundEngine.playClick();
+    const issue = generateGithubIssueTemplate();
+    navigator.clipboard.writeText(issue);
+    setCopiedIssue(true);
+    setTimeout(() => setCopiedIssue(false), 2000);
+  };
+
   const handleDownloadHtml = () => {
     soundEngine.playClick();
     const html = generateHtmlReport();
@@ -225,15 +315,15 @@ export const SnapshotModal: React.FC<Props> = ({
           ワークスペースの保存 & エクスポート
         </h3>
         <p className="text-xs text-slate-400 mb-6">
-          現在の変形キャンバス全体の保存、Markdownサマリーの書き出し、または過去データの復元
+          現在の変形キャンバス全体の保存、Markdown・CSV・HTMLの書き出し、または過去データの復元
         </p>
 
         <div className="space-y-4">
-          {/* Export Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {/* Export Actions Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <button
               onClick={handleDownloadJson}
-              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all"
             >
               <Download className="w-4 h-4 text-cyan-400 flex-shrink-0" />
               <div>
@@ -244,7 +334,7 @@ export const SnapshotModal: React.FC<Props> = ({
 
             <button
               onClick={handleCopyMarkdown}
-              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all"
             >
               <FileText className="w-4 h-4 text-indigo-400 flex-shrink-0" />
               <div>
@@ -257,12 +347,36 @@ export const SnapshotModal: React.FC<Props> = ({
 
             <button
               onClick={handleDownloadHtml}
-              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all"
             >
               <Globe className="w-4 h-4 text-emerald-400 flex-shrink-0" />
               <div>
                 <div className="text-xs font-bold text-slate-200">HTML保存</div>
                 <div className="text-[10px] text-slate-400 mt-0.5">単体Web閲覧</div>
+              </div>
+            </button>
+
+            <button
+              onClick={handleDownloadCsv}
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-slate-200">CSV出力</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Excel / Notion</div>
+              </div>
+            </button>
+
+            <button
+              onClick={handleCopyGithubIssue}
+              className="flex items-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3 rounded-xl text-left transition-all col-span-2 sm:col-span-2"
+            >
+              <GitPullRequest className="w-4 h-4 text-purple-400 flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-slate-200">
+                  {copiedIssue ? 'コピー完了！' : 'GitHub Issue 用 Markdown'}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-0.5">チェックリスト＆仕様書テンプレート</div>
               </div>
             </button>
           </div>
