@@ -3,6 +3,8 @@ import type { MorphicWidget } from '../types/morphic';
 import { soundEngine } from '../../src/lib/soundEngine';
 import {
   Activity,
+  ArrowDownCircle,
+  ArrowUpCircle,
   ChevronDown,
   ChevronUp,
   Compass,
@@ -16,6 +18,7 @@ import {
   Scale,
   Sliders,
   Sparkles,
+  Zap,
   X,
 } from 'lucide-react';
 import { MetricSimulationWidget } from './widgets/MetricSimulationWidget';
@@ -25,6 +28,7 @@ import { DecisionTradeoffWidget } from './widgets/DecisionTradeoffWidget';
 import { SynapseNoteWidget } from './widgets/SynapseNoteWidget';
 import { AmbientAudioWidget } from './widgets/AmbientAudioWidget';
 import { GenericCustomWidget } from './widgets/GenericCustomWidget';
+import { getWidgetInputPorts, getWidgetOutputPorts } from '../lib/synapseManager';
 
 interface Props {
   widget: MorphicWidget;
@@ -32,6 +36,9 @@ interface Props {
   onRemove: (id: string) => void;
   onEmitOutput?: (key: string, value: number) => void;
   onZenFocus?: (widget: MorphicWidget) => void;
+  isWiringMode?: boolean;
+  activePort?: { widgetId: string; key: string; direction: 'in' | 'out' } | null;
+  onSelectPort?: (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => void;
 }
 
 export const WidgetContainer: React.FC<Props> = ({
@@ -40,7 +47,12 @@ export const WidgetContainer: React.FC<Props> = ({
   onRemove,
   onEmitOutput,
   onZenFocus,
+  isWiringMode,
+  activePort,
+  onSelectPort,
 }) => {
+  const inputPorts = getWidgetInputPorts(widget);
+  const outputPorts = getWidgetOutputPorts(widget);
   const getIcon = () => {
     switch (widget.type) {
       case 'simulation':
@@ -107,8 +119,46 @@ export const WidgetContainer: React.FC<Props> = ({
 
   return (
     <div
-      className={`glass-panel rounded-2xl overflow-hidden transition-all duration-300 flex flex-col border ${getAccentBorderClass()} ${sizeClasses} shadow-xl`}
+      id={`widget_${widget.id}`}
+      className={`glass-panel rounded-2xl overflow-hidden transition-all duration-300 flex flex-col border relative ${getAccentBorderClass()} ${sizeClasses} shadow-xl ${
+        isWiringMode ? 'ring-1 ring-indigo-500/30' : ''
+      }`}
     >
+      {/* Wiring Mode: Input Ports Header Bar */}
+      {isWiringMode && inputPorts.length > 0 && (
+        <div className="bg-indigo-950/80 px-3 py-1.5 border-b border-indigo-800/60 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono">
+          <ArrowDownCircle className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+          <span className="text-slate-400 flex-shrink-0">IN:</span>
+          {inputPorts.map((p) => {
+            const isSelected = activePort?.widgetId === widget.id && activePort?.key === p.name && activePort?.direction === 'in';
+            const canConnect = activePort && activePort.direction === 'out' && activePort.widgetId !== widget.id;
+
+            return (
+              <button
+                key={p.id}
+                onClick={() => {
+                  soundEngine.playClick();
+                  if (onSelectPort) {
+                    onSelectPort(isSelected ? null : { widgetId: widget.id, key: p.name, direction: 'in' });
+                  }
+                }}
+                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 whitespace-nowrap border ${
+                  isSelected
+                    ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-300 shadow-md shadow-cyan-500/50 scale-105'
+                    : canConnect
+                    ? 'bg-cyan-950/90 text-cyan-200 border-cyan-500 animate-pulse hover:bg-cyan-800'
+                    : 'bg-slate-900 text-slate-300 border-slate-700 hover:border-slate-500'
+                }`}
+                title={`入力ポート: ${p.label}`}
+              >
+                <Zap className="w-2.5 h-2.5 text-cyan-400" />
+                <span>{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Header Bar */}
       <div className="px-4 py-3 bg-slate-900/80 border-b border-slate-800/80 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -198,6 +248,41 @@ export const WidgetContainer: React.FC<Props> = ({
           {widget.type === 'synapse_notes' && <SynapseNoteWidget widget={widget} onUpdate={onUpdate} />}
           {widget.type === 'ambient_audio' && <AmbientAudioWidget widget={widget} onUpdate={onUpdate} />}
           {widget.type === 'custom' && <GenericCustomWidget widget={widget} onUpdate={onUpdate} />}
+        </div>
+      )}
+
+      {/* Wiring Mode: Output Ports Footer Bar */}
+      {isWiringMode && outputPorts.length > 0 && (
+        <div className="bg-slate-950/90 px-3 py-1.5 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[10px] font-mono">
+          <ArrowUpCircle className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+          <span className="text-slate-400 flex-shrink-0">OUT:</span>
+          {outputPorts.map((p) => {
+            const isSelected = activePort?.widgetId === widget.id && activePort?.key === p.name && activePort?.direction === 'out';
+            const canConnect = activePort && activePort.direction === 'in' && activePort.widgetId !== widget.id;
+
+            return (
+              <button
+                key={p.id}
+                onClick={() => {
+                  soundEngine.playClick();
+                  if (onSelectPort) {
+                    onSelectPort(isSelected ? null : { widgetId: widget.id, key: p.name, direction: 'out' });
+                  }
+                }}
+                className={`px-2 py-0.5 rounded transition-all flex items-center gap-1 whitespace-nowrap border ${
+                  isSelected
+                    ? 'bg-indigo-500 text-white font-bold border-indigo-300 shadow-md shadow-indigo-500/50 scale-105'
+                    : canConnect
+                    ? 'bg-indigo-950/90 text-indigo-200 border-indigo-500 animate-pulse hover:bg-indigo-800'
+                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-600'
+                }`}
+                title={`出力ポート: ${p.label}`}
+              >
+                <Zap className="w-2.5 h-2.5 text-indigo-400" />
+                <span>{p.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

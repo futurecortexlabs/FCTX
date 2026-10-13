@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { MorphicWidget, ThoughtPreset } from './types/morphic';
+import type { MorphicWidget, SynapseLink, ThoughtPreset, WorkspaceViewMode } from './types/morphic';
 import {
   loadSavedWidgets,
   saveWidgets,
+  loadSavedSynapses,
+  saveSynapses,
   loadSettings,
   saveSettings,
   getApiKey,
@@ -15,12 +17,16 @@ import { Header } from './components/Header';
 import { CortexCommand } from './components/CortexCommand';
 import { SynapseBusViewer } from './components/SynapseBusViewer';
 import { WidgetContainer } from './components/WidgetContainer';
+import { SpatialCanvas } from './components/SpatialCanvas';
+import { SynapseCableOverlay } from './components/SynapseCableOverlay';
+import { CommandPalette } from './components/CommandPalette';
 import { SettingsModal } from './components/modals/SettingsModal';
 import { SnapshotModal } from './components/modals/SnapshotModal';
 import { AddWidgetModal } from './components/modals/AddWidgetModal';
 import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDrawer';
 import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
+import { propagateSynapseValues } from './lib/synapseManager';
 import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -30,7 +36,21 @@ export const App: React.FC = () => {
     return saved && saved.length > 0 ? saved : SHOWCASE_PRESETS[0].widgets;
   });
 
+  const [synapses, setSynapses] = useState<SynapseLink[]>(() => {
+    const saved = loadSavedSynapses();
+    if (saved && saved.length > 0) return saved;
+    // Default initial synapse link: simulation profit -> bus
+    return [];
+  });
+
+  const [viewMode, setViewMode] = useState<WorkspaceViewMode>('grid');
+  const [isWiringMode, setIsWiringMode] = useState(false);
+  const [activePort, setActivePort] = useState<{ widgetId: string; key: string; direction: 'in' | 'out' } | null>(
+    null
+  );
+
   const [zenWidget, setZenWidget] = useState<MorphicWidget | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const [busState, setBusState] = useState<Record<string, number | string>>({
     annual_profit: 6920000,
@@ -63,23 +83,94 @@ export const App: React.FC = () => {
     soundEngine.setEnabled(settings.soundEnabled);
   }, [settings.soundEnabled]);
 
-  // Persist widgets
+  // Persist widgets & synapses
   useEffect(() => {
     saveWidgets(widgets);
   }, [widgets]);
 
+  useEffect(() => {
+    saveSynapses(synapses);
+  }, [synapses]);
+
   const whispers = analyzeWorkspaceState(widgets);
 
-  // Keyboard shortcut: Escape to close Zen mode
+  // Reactive Synapse Propagation
+  useEffect(() => {
+    if (synapses.length > 0) {
+      const { updatedWidgets, hasChanges } = propagateSynapseValues(widgets, synapses, busState);
+      if (hasChanges) {
+        soundEngine.playSynapsePulse();
+        setWidgets(updatedWidgets);
+      }
+    }
+  }, [busState, synapses]);
+
+  // Keyboard shortcuts: Cmd+K / Ctrl+K for Command Palette, Escape for Zen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setZenWidget(null);
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        soundEngine.playClick();
+        setIsCommandPaletteOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        if (zenWidget) {
+          setZenWidget(null);
+        } else if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false);
+        } else if (isWiringMode) {
+          setIsWiringMode(false);
+          setActivePort(null);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [zenWidget, isCommandPaletteOpen, isWiringMode]);
+
+  // Handle Synapse Port Connection
+  const handleSelectPort = (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => {
+    if (!port) {
+      setActivePort(null);
+      return;
+    }
+
+    if (!activePort) {
+      setActivePort(port);
+      return;
+    }
+
+    // If clicking same port, deselect
+    if (activePort.widgetId === port.widgetId && activePort.key === port.key) {
+      setActivePort(null);
+      return;
+    }
+
+    // Connect if directions are opposite and from different widgets
+    if (activePort.direction !== port.direction && activePort.widgetId !== port.widgetId) {
+      soundEngine.playMorph();
+      const sourcePort = activePort.direction === 'out' ? activePort : port;
+      const targetPort = activePort.direction === 'in' ? activePort : port;
+
+      const newLink: SynapseLink = {
+        id: `syn_${Date.now()}`,
+        sourceWidgetId: sourcePort.widgetId,
+        sourceKey: sourcePort.key,
+        targetWidgetId: targetPort.widgetId,
+        targetKey: targetPort.key,
+      };
+
+      setSynapses((prev) => [...prev, newLink]);
+      setActivePort(null);
+    } else {
+      // Switch active port
+      setActivePort(port);
+    }
+  };
+
+  const handleRemoveSynapse = (linkId: string) => {
+    soundEngine.playClick();
+    setSynapses((prev) => prev.filter((s) => s.id !== linkId));
+  };
 
   // Handle Morphing Trigger
   const handleMorph = async (prompt: string) => {
@@ -151,6 +242,8 @@ export const App: React.FC = () => {
 
   const handleRemoveWidget = (id: string) => {
     setWidgets((prev) => prev.filter((w) => w.id !== id));
+    // Remove links connected to this widget
+    setSynapses((prev) => prev.filter((s) => s.sourceWidgetId !== id && s.targetWidgetId !== id));
   };
 
   const handleEmitOutput = (key: string, value: number) => {
@@ -160,6 +253,7 @@ export const App: React.FC = () => {
   const handleResetWorkspace = () => {
     soundEngine.playMorph();
     setWidgets(SHOWCASE_PRESETS[0].widgets);
+    setSynapses([]);
     setActiveReasoning('ワークスペースを初期状態にリセットしました。');
   };
 
@@ -183,7 +277,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200 relative overflow-x-hidden">
       {/* Background Neural Ambient Mesh */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
@@ -205,10 +299,17 @@ export const App: React.FC = () => {
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onResetWorkspace={handleResetWorkspace}
+        isWiringMode={isWiringMode}
+        onToggleWiring={() => {
+          setIsWiringMode((prev) => !prev);
+          setActivePort(null);
+        }}
+        viewMode={viewMode}
+        onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
       />
 
-      {/* Main Workspace Canvas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Main Workspace Area */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
         {/* Prompter Command Bar */}
         <CortexCommand
           onMorph={handleMorph}
@@ -220,14 +321,17 @@ export const App: React.FC = () => {
         {/* Synapse State Bus Data Conduit */}
         <SynapseBusViewer busState={busState} />
 
-        {/* Morphic Widget Grid */}
-        <div className="space-y-4">
+        {/* Morphic Workspace Viewport */}
+        <div className="space-y-4 relative">
           <div className="flex items-center justify-between text-xs text-slate-400 px-1">
             <div className="flex items-center gap-2">
               <Layers className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="font-semibold text-slate-300">アクティブ変形キャンバス</span>
+              <span className="font-semibold text-slate-300">
+                {viewMode === 'canvas' ? '空間キャンバス・ビュー' : 'アクティブ変形キャンバス (グリッド)'}
+              </span>
               <span className="text-slate-500 text-[11px]">
-                ({widgets.filter((w) => w.isPinned).length} 個ピン留め保護中)
+                ({widgets.filter((w) => w.isPinned).length} 個ピン留め保護中
+                {synapses.length > 0 && ` / ${synapses.length} 本のシナプス直結`})
               </span>
             </div>
 
@@ -253,7 +357,33 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Dynamic Grid Layout */}
+          {/* Wiring Instructions Banner if active */}
+          {isWiringMode && (
+            <div className="bg-gradient-to-r from-indigo-950/90 to-cyan-950/90 border border-cyan-500/50 rounded-xl p-3 flex items-center justify-between text-xs text-cyan-200 animate-in fade-in shadow-xl">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <span>
+                  <b>【シナプス配線モード】</b> 各ウィジェットの「▲ OUT」と別のウィジェットの「▼ IN」をクリックしてデータ直結してください。
+                  {activePort && (
+                    <span className="ml-2 font-mono text-amber-300 font-bold">
+                      [選択中: {activePort.direction.toUpperCase()} - {activePort.key}]
+                    </span>
+                  )}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsWiringMode(false);
+                  setActivePort(null);
+                }}
+                className="text-[11px] font-mono bg-cyan-900/60 hover:bg-cyan-800 px-2.5 py-1 rounded text-white"
+              >
+                完了
+              </button>
+            </div>
+          )}
+
+          {/* Dynamic Grid vs Spatial Canvas View */}
           {widgets.length === 0 ? (
             <div className="py-20 text-center glass-panel rounded-2xl border border-slate-800/80 space-y-3">
               <Sparkles className="w-8 h-8 text-indigo-400 mx-auto animate-pulse" />
@@ -262,26 +392,69 @@ export const App: React.FC = () => {
                 上部のコマンドバーに思考や目的を入力するか、プリセットを選択して新しい作業空間を自己生成させてください。
               </p>
             </div>
+          ) : viewMode === 'canvas' ? (
+            <div className="relative">
+              <SpatialCanvas
+                widgets={widgets}
+                onUpdateWidget={handleUpdateWidget}
+                onRemoveWidget={handleRemoveWidget}
+                onEmitOutput={handleEmitOutput}
+                onZenFocus={(w) => setZenWidget(w)}
+                isWiringMode={isWiringMode}
+                activePort={activePort}
+                onSelectPort={handleSelectPort}
+              />
+              <SynapseCableOverlay
+                widgets={widgets}
+                synapses={synapses}
+                onAddSynapse={(link) => setSynapses((prev) => [...prev, link])}
+                onRemoveSynapse={handleRemoveSynapse}
+                isWiringMode={isWiringMode}
+                activePort={activePort}
+                onSelectPort={handleSelectPort}
+              />
+            </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              {widgets.map((widget) => (
-                <WidgetContainer
-                  key={widget.id}
-                  widget={widget}
-                  onUpdate={handleUpdateWidget}
-                  onRemove={handleRemoveWidget}
-                  onEmitOutput={handleEmitOutput}
-                  onZenFocus={(w) => setZenWidget(w)}
-                />
-              ))}
+            <div className="relative">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 relative z-10">
+                {widgets.map((widget) => (
+                  <WidgetContainer
+                    key={widget.id}
+                    widget={widget}
+                    onUpdate={handleUpdateWidget}
+                    onRemove={handleRemoveWidget}
+                    onEmitOutput={handleEmitOutput}
+                    onZenFocus={(w) => setZenWidget(w)}
+                    isWiringMode={isWiringMode}
+                    activePort={activePort}
+                    onSelectPort={handleSelectPort}
+                  />
+                ))}
+              </div>
+              <SynapseCableOverlay
+                widgets={widgets}
+                synapses={synapses}
+                onAddSynapse={(link) => setSynapses((prev) => [...prev, link])}
+                onRemoveSynapse={handleRemoveSynapse}
+                isWiringMode={isWiringMode}
+                activePort={activePort}
+                onSelectPort={handleSelectPort}
+              />
             </div>
           )}
         </div>
       </main>
 
       {/* Footer Info */}
-      <footer className="border-t border-slate-800/60 py-4 px-6 text-center text-xs text-slate-400 font-mono">
-        FCTX // Future Cortex Labs — Morphic Ambient Workspace © 2026
+      <footer className="border-t border-slate-800/60 py-4 px-6 text-center text-xs text-slate-400 font-mono flex items-center justify-between max-w-7xl mx-auto w-full">
+        <span>FCTX // Future Cortex Labs — Morphic Ambient Workspace © 2026</span>
+        <button
+          onClick={() => setIsCommandPaletteOpen(true)}
+          className="text-[11px] text-slate-400 hover:text-indigo-300 font-mono flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800 transition-colors"
+        >
+          <span>Cmd+K / Ctrl+K</span>
+          <span className="text-slate-400">コマンドパレット</span>
+        </button>
       </footer>
 
       {/* Ambient Cortex Whisper Bar */}
@@ -327,6 +500,28 @@ export const App: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onApplyPreset={handleApplyPreset}
+        onOpenAddWidget={() => setIsAddWidgetOpen(true)}
+        onToggleWiring={() => setIsWiringMode((prev) => !prev)}
+        isWiringMode={isWiringMode}
+        onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
+        viewMode={viewMode}
+        onOpenSnapshot={() => setIsSnapshotOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onToggleSound={() => {
+          const nextVal = !settings.soundEnabled;
+          const updated = { ...settings, soundEnabled: nextVal };
+          setSettingsState(updated);
+          saveSettings(updated);
+        }}
+        soundEnabled={settings.soundEnabled}
+      />
 
       {/* Modals */}
       <SettingsModal

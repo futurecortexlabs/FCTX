@@ -75,6 +75,9 @@ export interface MorphicWidget {
   accentColor: string; // Hex or Tailwind color class
   size: 'normal' | 'wide' | 'full';
 
+  // Spatial canvas coordinates
+  position?: { x: number; y: number };
+
   // Output value exposed to Synaptic Bus
   outputKey?: string;
   outputValue?: number | string | Record<string, unknown>;
@@ -138,3 +141,19 @@ export interface CortexWhisper {
 
 export type ScenarioType = 'base' | 'bull' | 'bear';
 
+export type WorkspaceViewMode = 'grid' | 'canvas';
+
+export interface CanvasViewport {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+export interface SynapsePort {
+  id: string;
+  name: string;
+  label: string;
+  type: 'number' | 'string' | 'boolean';
+  direction: 'in' | 'out';
+  currentValue?: any;
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MorphicWidget } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Download, FileText, Upload, X } from 'lucide-react';
+import { Download, FileText, Globe, Upload, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -79,6 +79,104 @@ export const SnapshotModal: React.FC<Props> = ({
     return md;
   };
 
+  const generateHtmlReport = (): string => {
+    const timestamp = new Date().toLocaleString('ja-JP');
+    let cardsHtml = '';
+
+    widgets.forEach((w) => {
+      let contentHtml = '';
+
+      if (w.type === 'simulation' && w.data.variables) {
+        contentHtml += '<div class="section"><h4>変数パラメータ</h4><div class="grid">';
+        w.data.variables.forEach((v) => {
+          contentHtml += `<div class="pill"><span>${v.label}</span><b>${v.value.toLocaleString()} ${v.unit || ''}</b></div>`;
+        });
+        contentHtml += '</div></div>';
+      }
+
+      if (w.type === 'pipeline' && w.data.stages) {
+        contentHtml += '<div class="section"><h4>パイプライン進行</h4>';
+        w.data.stages.forEach((s) => {
+          contentHtml += `<div class="stage-block"><b>${s.title}</b><ul>`;
+          s.items.forEach((item) => {
+            contentHtml += `<li class="${item.done ? 'done' : ''}">${item.done ? '✓' : '○'} ${item.text}</li>`;
+          });
+          contentHtml += '</ul></div>';
+        });
+        contentHtml += '</div>';
+      }
+
+      if (w.type === 'tradeoff' && w.data.options) {
+        contentHtml += '<div class="section"><h4>選択肢の比較評価</h4><div class="grid">';
+        w.data.options.forEach((opt) => {
+          contentHtml += `<div class="opt-card"><b>${opt.title}</b><p>メリット: ${opt.pros.join(', ')}</p><p>懸念: ${opt.cons.join(', ')}</p></div>`;
+        });
+        contentHtml += '</div></div>';
+      }
+
+      if (w.type === 'synapse_notes' && w.data.content) {
+        contentHtml += `<div class="section"><h4>メモ & 洞察</h4><pre>${w.data.content}</pre></div>`;
+      }
+
+      cardsHtml += `
+        <div class="card">
+          <div class="card-header">
+            <span class="badge">${w.category}</span>
+            <h3>${w.title}</h3>
+            <p>${w.description}</p>
+          </div>
+          ${contentHtml}
+        </div>
+      `;
+    });
+
+    return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>FCTX // Morphic Workspace Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #07090e; color: #e2e8f0; margin: 0; padding: 40px 20px; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { font-size: 28px; margin-bottom: 4px; color: #f8fafc; }
+    .time { color: #64748b; font-size: 13px; margin-bottom: 30px; font-family: monospace; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    .card-header h3 { margin: 8px 0 4px 0; font-size: 18px; color: #f1f5f9; }
+    .card-header p { margin: 0 0 16px 0; font-size: 13px; color: #94a3b8; }
+    .badge { font-size: 11px; font-family: monospace; background: #1e1b4b; color: #818cf8; padding: 2px 8px; border-radius: 6px; }
+    .section h4 { font-size: 14px; margin: 16px 0 8px 0; color: #cbd5e1; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .pill { background: #090d16; border: 1px solid #1e293b; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 12px; }
+    .pill b { color: #818cf8; font-family: monospace; }
+    ul { list-style: none; padding-left: 0; }
+    li { padding: 4px 0; font-size: 13px; color: #cbd5e1; }
+    li.done { text-decoration: line-through; color: #64748b; }
+    .opt-card { background: #090d16; border: 1px solid #1e293b; padding: 12px; border-radius: 8px; font-size: 12px; }
+    pre { background: #090d16; padding: 12px; border-radius: 8px; font-size: 13px; overflow-x: auto; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FCTX // Morphic Workspace 意思決定 & 思考結晶レポート</h1>
+    <div class="time">生成日時: ${timestamp} | Future Cortex Labs</div>
+    ${cardsHtml}
+  </div>
+</body>
+</html>`;
+  };
+
+  const handleDownloadHtml = () => {
+    soundEngine.playClick();
+    const html = generateHtmlReport();
+    const dataStr = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `fctx_morphic_report_${Date.now()}.html`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
   const handleDownloadJson = () => {
     soundEngine.playClick();
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(widgets, null, 2));
@@ -132,28 +230,39 @@ export const SnapshotModal: React.FC<Props> = ({
 
         <div className="space-y-4">
           {/* Export Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <button
               onClick={handleDownloadJson}
-              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-4 rounded-xl text-left transition-all"
+              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
             >
               <Download className="w-4 h-4 text-cyan-400 flex-shrink-0" />
               <div>
-                <div className="text-xs font-bold text-slate-200">JSONエクスポート</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">全ウィジェット状態の完全保存</div>
+                <div className="text-xs font-bold text-slate-200">JSON出力</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">完全保存</div>
               </div>
             </button>
 
             <button
               onClick={handleCopyMarkdown}
-              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-4 rounded-xl text-left transition-all"
+              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
             >
               <FileText className="w-4 h-4 text-indigo-400 flex-shrink-0" />
               <div>
                 <div className="text-xs font-bold text-slate-200">
-                  {copiedMd ? 'コピー完了！' : 'Markdownレポート'}
+                  {copiedMd ? 'コピー完了' : 'Markdown'}
                 </div>
-                <div className="text-[10px] text-slate-400 mt-0.5">思考結晶サマリーをクリップボードへ</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">レポートコピー</div>
+              </div>
+            </button>
+
+            <button
+              onClick={handleDownloadHtml}
+              className="flex items-center justify-center gap-2 bg-slate-950/80 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 p-3.5 rounded-xl text-left transition-all"
+            >
+              <Globe className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <div>
+                <div className="text-xs font-bold text-slate-200">HTML保存</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">単体Web閲覧</div>
               </div>
             </button>
           </div>

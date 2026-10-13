@@ -6,6 +6,8 @@ class SoundEngine {
   private ambientGain: GainNode | null = null;
   private ambientOsc1: OscillatorNode | null = null;
   private ambientOsc2: OscillatorNode | null = null;
+  private noiseSource: AudioBufferSourceNode | null = null;
+  private filterNode: BiquadFilterNode | null = null;
   private isAmbientPlaying: boolean = false;
 
   private initContext() {
@@ -126,31 +128,75 @@ class SoundEngine {
       this.ambientGain = this.ctx.createGain();
       this.ambientGain.gain.setValueAtTime(volume * 0.12, now);
 
+      if (preset === 'rain') {
+        // Procedural gentle rain sound via filtered pink/white noise
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          b3 = 0.86650 * b3 + white * 0.3104856;
+          b4 = 0.55000 * b4 + white * 0.5329522;
+          b5 = -0.7616 * b5 - white * 0.0168980;
+          output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.06;
+          b6 = white * 0.115926;
+        }
+
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(650, now);
+
+        whiteNoise.connect(filter);
+        filter.connect(this.ambientGain);
+        this.ambientGain.connect(this.ctx.destination);
+
+        whiteNoise.start();
+        this.noiseSource = whiteNoise;
+        this.filterNode = filter;
+        this.isAmbientPlaying = true;
+        return;
+      }
+
       let baseFreq = 216; // A 432 / 2
       let beatFreq = 10; // Alpha (10Hz focus)
 
       if (preset === 'theta') beatFreq = 6; // Deep creativity / intuition
       if (preset === 'gamma') beatFreq = 40; // High cognitive throughput
       if (preset === 'deepspace') {
-        baseFreq = 108;
-        beatFreq = 4.5;
+        baseFreq = 64; // Sub-harmonic deep drone
+        beatFreq = 3.5;
       }
 
       // Left binaural channel
       const osc1 = this.ctx.createOscillator();
-      osc1.type = 'sine';
+      osc1.type = preset === 'deepspace' ? 'sawtooth' : 'sine';
       osc1.frequency.setValueAtTime(baseFreq, now);
 
       // Right binaural channel
       const osc2 = this.ctx.createOscillator();
-      osc2.type = 'sine';
+      osc2.type = preset === 'deepspace' ? 'sine' : 'sine';
       osc2.frequency.setValueAtTime(baseFreq + beatFreq, now);
+
+      // Lowpass filter for smooth warmth
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(preset === 'deepspace' ? 180 : 800, now);
 
       const merger = this.ctx.createChannelMerger(2);
       osc1.connect(merger, 0, 0);
       osc2.connect(merger, 0, 1);
 
-      merger.connect(this.ambientGain);
+      merger.connect(filter);
+      filter.connect(this.ambientGain);
       this.ambientGain.connect(this.ctx.destination);
 
       osc1.start();
@@ -158,6 +204,7 @@ class SoundEngine {
 
       this.ambientOsc1 = osc1;
       this.ambientOsc2 = osc2;
+      this.filterNode = filter;
       this.isAmbientPlaying = true;
     } catch {
       // ignore
@@ -166,6 +213,11 @@ class SoundEngine {
 
   public stopAmbient() {
     try {
+      if (this.noiseSource) {
+        this.noiseSource.stop();
+        this.noiseSource.disconnect();
+        this.noiseSource = null;
+      }
       if (this.ambientOsc1) {
         this.ambientOsc1.stop();
         this.ambientOsc1.disconnect();
@@ -175,6 +227,10 @@ class SoundEngine {
         this.ambientOsc2.stop();
         this.ambientOsc2.disconnect();
         this.ambientOsc2 = null;
+      }
+      if (this.filterNode) {
+        this.filterNode.disconnect();
+        this.filterNode = null;
       }
       if (this.ambientGain) {
         this.ambientGain.disconnect();

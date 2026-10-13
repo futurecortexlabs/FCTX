@@ -1,6 +1,19 @@
 import React from 'react';
 import { soundEngine } from '../lib/soundEngine';
-import { Cpu, Download, History, RefreshCw, Settings, Volume2, VolumeX, Zap } from 'lucide-react';
+import type { WorkspaceViewMode } from '../types/morphic';
+import {
+  Cpu,
+  Download,
+  History,
+  LayoutGrid,
+  Orbit,
+  RefreshCw,
+  Settings,
+  Share2,
+  Volume2,
+  VolumeX,
+  Zap,
+} from 'lucide-react';
 
 interface Props {
   widgetCount: number;
@@ -10,6 +23,10 @@ interface Props {
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
   onResetWorkspace: () => void;
+  isWiringMode: boolean;
+  onToggleWiring: () => void;
+  viewMode: WorkspaceViewMode;
+  onToggleViewMode: () => void;
 }
 
 export const Header: React.FC<Props> = ({
@@ -20,6 +37,10 @@ export const Header: React.FC<Props> = ({
   onOpenSnapshot,
   onOpenHistory,
   onResetWorkspace,
+  isWiringMode,
+  onToggleWiring,
+  viewMode,
+  onToggleViewMode,
 }) => {
   return (
     <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-30">
@@ -55,6 +76,44 @@ export const Header: React.FC<Props> = ({
             <span>稼働モジュール:</span>
             <span className="font-bold text-indigo-300">{widgetCount}</span>
           </div>
+
+          {/* View Mode Toggle (Grid vs Spatial Canvas) */}
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              onToggleViewMode();
+            }}
+            className={`p-2 rounded-lg border transition-all flex items-center gap-1.5 ${
+              viewMode === 'canvas'
+                ? 'bg-purple-950/80 border-purple-500/80 text-purple-200 shadow-md shadow-purple-950/40 ring-1 ring-purple-500/50'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+            title={viewMode === 'canvas' ? 'グリッド表示に切り替え' : '空間キャンバス表示に切り替え (パン & ズーム)'}
+          >
+            {viewMode === 'canvas' ? <Orbit className="w-4 h-4 text-purple-400 animate-spin-slow" /> : <LayoutGrid className="w-4 h-4" />}
+            <span className="text-xs font-mono hidden xl:inline">
+              {viewMode === 'canvas' ? '空間キャンバス' : 'グリッド'}
+            </span>
+          </button>
+
+          {/* Wiring Mode Toggle */}
+          <button
+            onClick={() => {
+              soundEngine.playMorph();
+              onToggleWiring();
+            }}
+            className={`p-2 rounded-lg border transition-all flex items-center gap-1.5 ${
+              isWiringMode
+                ? 'bg-cyan-950/90 border-cyan-500 text-cyan-200 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-500 animate-pulse'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-cyan-400'
+            }`}
+            title={isWiringMode ? '配線モード終了' : 'シナプス配線モード (モジュール間データ直結)'}
+          >
+            <Share2 className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-mono font-bold hidden lg:inline">
+              {isWiringMode ? '配線中' : 'シナプス配線'}
+            </span>
+          </button>
 
           {/* Sound Toggle */}
           <button
