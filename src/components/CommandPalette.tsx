@@ -3,8 +3,10 @@ import { soundEngine } from '../lib/soundEngine';
 import { SHOWCASE_PRESETS } from '../lib/synthesizer';
 import type { ThoughtPreset, WorkspaceViewMode } from '../types/morphic';
 import {
+  Brain,
   Download,
   History,
+  Keyboard,
   LayoutGrid,
   Orbit,
   Plus,
@@ -30,6 +32,8 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
   onOpenSettings: () => void;
+  onOpenCopilot?: () => void;
+  onOpenShortcutsHelp?: () => void;
   onToggleSound: () => void;
   soundEnabled: boolean;
 }
@@ -47,6 +51,8 @@ export const CommandPalette: React.FC<Props> = ({
   onOpenHistory,
   onOpenPresentationDeck,
   onOpenSettings,
+  onOpenCopilot,
+  onOpenShortcutsHelp,
   onToggleSound,
   soundEnabled,
 }) => {
@@ -96,6 +102,28 @@ export const CommandPalette: React.FC<Props> = ({
       icon: <Presentation className="w-4 h-4 text-indigo-400" />,
       run: () => onOpenPresentationDeck(),
     },
+    ...(onOpenCopilot
+      ? [
+          {
+            id: 'cortex_copilot',
+            title: 'Cortex Copilot AI (全体診断・対話コンサルタント)',
+            category: 'AI診断',
+            icon: <Brain className="w-4 h-4 text-cyan-400" />,
+            run: () => onOpenCopilot(),
+          },
+        ]
+      : []),
+    ...(onOpenShortcutsHelp
+      ? [
+          {
+            id: 'shortcuts_help',
+            title: 'キーボードショートカット一覧を表示 (?)',
+            category: 'ヘルプ',
+            icon: <Keyboard className="w-4 h-4 text-amber-400" />,
+            run: () => onOpenShortcutsHelp(),
+          },
+        ]
+      : []),
     {
       id: 'export',
       title: 'ワークスペースの保存 & Markdownレポート出力',

@@ -141,6 +141,8 @@ export interface CortexWhisper {
 
 export type ScenarioType = 'base' | 'bull' | 'bear';
 
+export type WorkspaceTheme = 'void' | 'matrix' | 'solaris' | 'cyberpunk';
+
 export type WorkspaceViewMode = 'grid' | 'canvas';
 
 export interface CanvasViewport {

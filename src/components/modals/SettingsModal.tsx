@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { WorkspaceSettings } from '../../lib/storage';
 import { getApiKey, setApiKey } from '../../lib/storage';
 import { soundEngine } from '../../lib/soundEngine';
-import { Key, Save, Sparkles, Volume2, X } from 'lucide-react';
+import { Key, Palette, Save, Sparkles, Volume2, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -104,6 +104,36 @@ export const SettingsModal: React.FC<Props> = ({
               >
                 {localSettings.synapticGlow ? 'ON' : 'OFF'}
               </button>
+            </div>
+          </div>
+
+          {/* Cybernetic Ambient Theme */}
+          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-2.5">
+            <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5 text-purple-400" />
+              アンビエント・サイバネティックテーマ
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[
+                { id: 'void', label: 'Deep Void', desc: 'インディゴ & シアン', border: 'border-indigo-500/50 text-indigo-300' },
+                { id: 'matrix', label: 'Cyber Matrix', desc: 'ネオンエメラルド', border: 'border-emerald-500/50 text-emerald-300' },
+                { id: 'solaris', label: 'Solaris Horizon', desc: '温熱アンバー & ゴールド', border: 'border-amber-500/50 text-amber-300' },
+                { id: 'cyberpunk', label: 'Vapor Retrowave', desc: 'マゼンタ & バイオレット', border: 'border-fuchsia-500/50 text-fuchsia-300' },
+              ].map((th) => (
+                <button
+                  key={th.id}
+                  type="button"
+                  onClick={() => setLocalSettings({ ...localSettings, theme: th.id as any })}
+                  className={`p-2.5 rounded-lg border text-left transition-all ${
+                    (localSettings.theme || 'void') === th.id
+                      ? `bg-slate-900 ${th.border} ring-1 ring-current font-bold`
+                      : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="text-xs font-semibold">{th.label}</div>
+                  <div className="text-[10px] opacity-70 mt-0.5">{th.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
         </div>

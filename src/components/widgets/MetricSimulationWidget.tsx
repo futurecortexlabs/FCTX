@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { MorphicWidget, ScenarioType } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { GitFork, Sliders, Sparkles, TrendingUp } from 'lucide-react';
+import { Dices, GitFork, LineChart, RefreshCw, Sliders, Sparkles, TrendingUp } from 'lucide-react';
 
 interface Props {
   widget: MorphicWidget;
@@ -12,6 +12,9 @@ interface Props {
 export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEmitOutput }) => {
   const variables = widget.data.variables || [];
   const formulas = widget.data.formulas || [];
+
+  const [activeAnalysisMode, setActiveAnalysisMode] = useState<'curve' | 'monte_carlo'>('curve');
+  const [monteCarloSeed, setMonteCarloSeed] = useState(0);
 
   const [activeScenario, setActiveScenario] = useState<ScenarioType>('base');
   const [baseValues] = useState<Record<string, number>>(() => {
@@ -117,6 +120,39 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
   const bearOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, getScenarioValues('bear')) : 0;
   const baseOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, baseValues) : 0;
   const bullOutput = primaryFormula ? calculateFormula(primaryFormula.calculate, getScenarioValues('bull')) : 0;
+
+  const monteCarloData = useMemo(() => {
+    if (activeAnalysisMode !== 'monte_carlo' || !primaryFormula) return null;
+    const trialCount = 100;
+    const trials: number[] = [];
+    for (let i = 0; i < trialCount; i++) {
+      const sampleVals: Record<string, number> = {};
+      variables.forEach((v) => {
+        const base = varValues[v.id] ?? v.value;
+        const jitter = (Math.random() + Math.random() + Math.random() - 1.5) * 0.22;
+        const sample = Math.max(v.min, Math.min(v.max, base * (1 + jitter)));
+        sampleVals[v.id] = sample;
+      });
+      const res = calculateFormula(primaryFormula.calculate, sampleVals);
+      trials.push(res);
+    }
+    trials.sort((a, b) => a - b);
+    const p10 = trials[Math.floor(trialCount * 0.1)];
+    const p50 = trials[Math.floor(trialCount * 0.5)];
+    const p90 = trials[Math.floor(trialCount * 0.9)];
+
+    const minVal = trials[0];
+    const maxVal = trials[trials.length - 1];
+    const binRange = (maxVal - minVal) || 1;
+    const bins = Array(8).fill(0);
+    trials.forEach((t) => {
+      const bIdx = Math.min(7, Math.floor(((t - minVal) / binRange) * 8));
+      bins[bIdx]++;
+    });
+    const maxBinCount = Math.max(...bins, 1);
+
+    return { trials, p10, p50, p90, minVal, maxVal, bins, maxBinCount };
+  }, [activeAnalysisMode, varValues, monteCarloSeed, primaryFormula]);
 
   return (
     <div className="space-y-6">
@@ -265,75 +301,193 @@ export const MetricSimulationWidget: React.FC<Props> = ({ widget, onUpdate, onEm
             })}
           </div>
 
-          {/* Dynamic SVG Sensitivity Curve */}
+          {/* Analysis Engine: Sensitivity Curve vs Monte Carlo Stochastic Simulation */}
           {variables.length > 0 && formulas.length > 0 && (() => {
             const primaryVar = variables[0];
             const primaryFormula = formulas[formulas.length - 1];
-            const sampleSteps = 8;
-            const points: { x: number; y: number; val: number; result: number }[] = [];
-            const stepDelta = (primaryVar.max - primaryVar.min) / (sampleSteps - 1);
-
-            let maxRes = 1;
-            let minRes = 0;
-
-            for (let i = 0; i < sampleSteps; i++) {
-              const testVal = primaryVar.min + stepDelta * i;
-              const simValues = { ...varValues, [primaryVar.id]: testVal };
-              const res = calculateFormula(primaryFormula.calculate, simValues);
-              if (res > maxRes) maxRes = res;
-              if (res < minRes) minRes = res;
-              points.push({ x: i, y: 0, val: testVal, result: res });
-            }
-
-            const range = maxRes - minRes || 1;
-            const width = 460;
-            const height = 90;
-            const padding = 20;
-
-            const coords = points.map((p, idx) => {
-              const svgX = padding + (idx / (sampleSteps - 1)) * (width - padding * 2);
-              const normalizedY = (p.result - minRes) / range;
-              const svgY = height - padding - normalizedY * (height - padding * 2);
-              return { svgX, svgY };
-            });
-
-            const pathD = coords.reduce(
-              (acc, pt, idx) => (idx === 0 ? `M ${pt.svgX} ${pt.svgY}` : `${acc} L ${pt.svgX} ${pt.svgY}`),
-              ''
-            );
-
-            const areaD = `${pathD} L ${coords[coords.length - 1].svgX} ${height} L ${coords[0].svgX} ${height} Z`;
 
             return (
-              <div className="mt-4 p-3 bg-slate-950/70 rounded-xl border border-slate-800/80">
-                <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono mb-1">
-                  <span>【感度曲線】{primaryVar.label} 変動に伴う {primaryFormula.label} 推移</span>
-                  <span className="text-cyan-400 font-bold">Dynamic Projection</span>
+              <div className="mt-4 p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2.5">
+                {/* Mode Selector Tabs */}
+                <div className="flex items-center justify-between text-[11px] font-mono border-b border-slate-800/80 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playClick();
+                        setActiveAnalysisMode('curve');
+                      }}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                        activeAnalysisMode === 'curve'
+                          ? 'bg-indigo-950 text-indigo-300 font-bold border border-indigo-700/60'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <LineChart className="w-3 h-3 text-indigo-400" />
+                      <span>感度投影曲線</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playClick();
+                        setActiveAnalysisMode('monte_carlo');
+                      }}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all ${
+                        activeAnalysisMode === 'monte_carlo'
+                          ? 'bg-cyan-950 text-cyan-300 font-bold border border-cyan-700/60'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Dices className="w-3 h-3 text-cyan-400" />
+                      <span>モンテカルロ試算 (100試行)</span>
+                    </button>
+                  </div>
+
+                  {activeAnalysisMode === 'monte_carlo' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundEngine.playSynapsePulse();
+                        setMonteCarloSeed((s) => s + 1);
+                      }}
+                      className="flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800/50 transition-colors"
+                      title="100回の確率試行を再実行"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
+                      <span>再試行</span>
+                    </button>
+                  )}
                 </div>
-                <div className="w-full overflow-hidden">
-                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-24 overflow-visible">
-                    <defs>
-                      <linearGradient id={`grad_${widget.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#818cf8" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-                    {/* Area fill */}
-                    <path d={areaD} fill={`url(#grad_${widget.id})`} />
-                    {/* Glowing Stroke */}
-                    <path d={pathD} fill="none" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
-                    {/* Sample Nodes */}
-                    {coords.map((pt, i) => (
-                      <circle
-                        key={i}
-                        cx={pt.svgX}
-                        cy={pt.svgY}
-                        r="3"
-                        className="fill-cyan-400 stroke-slate-950 stroke-2"
-                      />
-                    ))}
-                  </svg>
-                </div>
+
+                {/* Tab 1: Sensitivity Projection Curve */}
+                {activeAnalysisMode === 'curve' && (() => {
+                  const sampleSteps = 8;
+                  const points: { x: number; y: number; val: number; result: number }[] = [];
+                  const stepDelta = (primaryVar.max - primaryVar.min) / (sampleSteps - 1);
+
+                  let maxRes = 1;
+                  let minRes = 0;
+
+                  for (let i = 0; i < sampleSteps; i++) {
+                    const testVal = primaryVar.min + stepDelta * i;
+                    const simValues = { ...varValues, [primaryVar.id]: testVal };
+                    const res = calculateFormula(primaryFormula.calculate, simValues);
+                    if (res > maxRes) maxRes = res;
+                    if (res < minRes) minRes = res;
+                    points.push({ x: i, y: 0, val: testVal, result: res });
+                  }
+
+                  const range = maxRes - minRes || 1;
+                  const width = 460;
+                  const height = 90;
+                  const padding = 20;
+
+                  const coords = points.map((p, idx) => {
+                    const svgX = padding + (idx / (sampleSteps - 1)) * (width - padding * 2);
+                    const normalizedY = (p.result - minRes) / range;
+                    const svgY = height - padding - normalizedY * (height - padding * 2);
+                    return { svgX, svgY };
+                  });
+
+                  const pathD = coords.reduce(
+                    (acc, pt, idx) => (idx === 0 ? `M ${pt.svgX} ${pt.svgY}` : `${acc} L ${pt.svgX} ${pt.svgY}`),
+                    ''
+                  );
+
+                  const areaD = `${pathD} L ${coords[coords.length - 1].svgX} ${height} L ${coords[0].svgX} ${height} Z`;
+
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                        <span>{primaryVar.label} 変動に伴う {primaryFormula.label} 推移</span>
+                        <span className="text-indigo-400 font-bold">Dynamic Projection</span>
+                      </div>
+                      <div className="w-full overflow-hidden">
+                        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-24 overflow-visible">
+                          <defs>
+                            <linearGradient id={`grad_${widget.id}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#818cf8" stopOpacity="0.4" />
+                              <stop offset="100%" stopColor="#818cf8" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path d={areaD} fill={`url(#grad_${widget.id})`} />
+                          <path d={pathD} fill="none" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
+                          {coords.map((pt, i) => (
+                            <circle
+                              key={i}
+                              cx={pt.svgX}
+                              cy={pt.svgY}
+                              r="3"
+                              className="fill-cyan-400 stroke-slate-950 stroke-2"
+                            />
+                          ))}
+                        </svg>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Tab 2: Monte Carlo Stochastic Distribution */}
+                {activeAnalysisMode === 'monte_carlo' && monteCarloData && (
+                  <div className="space-y-3">
+                    {/* Percentile Stats */}
+                    <div className="grid grid-cols-3 gap-2 text-center font-mono">
+                      <div className="bg-slate-900/80 p-2 rounded-lg border border-rose-900/40">
+                        <span className="text-[10px] text-rose-400 block font-sans">P10 (下振れ確率90%防衛)</span>
+                        <span className="text-xs font-bold text-rose-300">
+                          {formatNumber(monteCarloData.p10, primaryFormula.unit)}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded-lg border border-cyan-900/40">
+                        <span className="text-[10px] text-cyan-400 block font-sans">P50 (中央値・最確値)</span>
+                        <span className="text-xs font-bold text-cyan-300">
+                          {formatNumber(monteCarloData.p50, primaryFormula.unit)}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded-lg border border-emerald-900/40">
+                        <span className="text-[10px] text-emerald-400 block font-sans">P90 (上振れポテンシャル)</span>
+                        <span className="text-xs font-bold text-emerald-300">
+                          {formatNumber(monteCarloData.p90, primaryFormula.unit)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Frequency Histogram Bars */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                        <span>100回 確率分布ヒストグラム (±15% ガウス揺らぎ)</span>
+                        <span className="text-cyan-400">正規分布密度</span>
+                      </div>
+                      <div className="flex items-end gap-1.5 h-16 pt-2 px-1 bg-slate-900/40 rounded-lg border border-slate-800">
+                        {monteCarloData.bins.map((count: number, bIdx: number) => {
+                          const heightPct = Math.max(8, Math.round((count / monteCarloData.maxBinCount) * 100));
+                          const isMedianBin = bIdx === 3 || bIdx === 4;
+
+                          return (
+                            <div
+                              key={bIdx}
+                              className="flex-1 flex flex-col items-center h-full justify-end group relative"
+                            >
+                              <div
+                                style={{ height: `${heightPct}%` }}
+                                className={`w-full rounded-t transition-all duration-300 ${
+                                  isMedianBin
+                                    ? 'bg-cyan-400 shadow-md shadow-cyan-500/30'
+                                    : 'bg-indigo-500/70 hover:bg-indigo-400'
+                                }`}
+                              />
+                              {/* Hover Tooltip */}
+                              <div className="opacity-0 group-hover:opacity-100 absolute -top-6 bg-slate-900 border border-slate-700 text-[9px] font-mono px-1.5 py-0.5 rounded text-white pointer-events-none transition-opacity z-20 whitespace-nowrap">
+                                {count} 回 ({count}%)
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}

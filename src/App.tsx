@@ -26,6 +26,8 @@ import { AddWidgetModal } from './components/modals/AddWidgetModal';
 import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDrawer';
 import { PresentationDeckModal } from './components/modals/PresentationDeckModal';
 import { CortexWhisperBar } from './components/CortexWhisperBar';
+import { CortexCopilotDrawer } from './components/CortexCopilotDrawer';
+import { ShortcutsHelpModal } from './components/modals/ShortcutsHelpModal';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
 import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
@@ -79,6 +81,8 @@ export const App: React.FC = () => {
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isPresentationDeckOpen, setIsPresentationDeckOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -107,9 +111,12 @@ export const App: React.FC = () => {
     }
   }, [busState, synapses]);
 
-  // Keyboard shortcuts: Cmd+K / Ctrl+K for Command Palette, Escape for Zen/Deck
+  // Keyboard shortcuts: Cmd+K / Ctrl+K, Escape, ?, W, G
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      const isInputActive = activeTag === 'input' || activeTag === 'textarea';
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         soundEngine.playClick();
@@ -119,17 +126,36 @@ export const App: React.FC = () => {
           setZenWidget(null);
         } else if (isPresentationDeckOpen) {
           setIsPresentationDeckOpen(false);
+        } else if (isCopilotOpen) {
+          setIsCopilotOpen(false);
+        } else if (isShortcutsHelpOpen) {
+          setIsShortcutsHelpOpen(false);
         } else if (isCommandPaletteOpen) {
           setIsCommandPaletteOpen(false);
         } else if (isWiringMode) {
           setIsWiringMode(false);
           setActivePort(null);
         }
+      } else if (!isInputActive) {
+        if (e.key === '?') {
+          e.preventDefault();
+          soundEngine.playClick();
+          setIsShortcutsHelpOpen((prev) => !prev);
+        } else if (e.key === 'w' || e.key === 'W') {
+          e.preventDefault();
+          soundEngine.playMorph();
+          setIsWiringMode((prev) => !prev);
+          setActivePort(null);
+        } else if (e.key === 'g' || e.key === 'G') {
+          e.preventDefault();
+          soundEngine.playClick();
+          setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'));
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zenWidget, isPresentationDeckOpen, isCommandPaletteOpen, isWiringMode]);
+  }, [zenWidget, isPresentationDeckOpen, isCommandPaletteOpen, isWiringMode, isCopilotOpen, isShortcutsHelpOpen]);
 
   // Handle Synapse Port Connection
   const handleSelectPort = (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => {
@@ -324,13 +350,52 @@ export const App: React.FC = () => {
     setWidgets((prev) => [newWidget, ...prev]);
   };
 
+  const handleUpdateSynapse = (updated: SynapseLink) => {
+    setSynapses((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  };
+
+  const getThemeBackground = () => {
+    switch (settings.theme) {
+      case 'matrix':
+        return (
+          <>
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/3 -right-40 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-lime-600/10 rounded-full blur-3xl" />
+          </>
+        );
+      case 'solaris':
+        return (
+          <>
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-600/15 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/3 -right-40 w-96 h-96 bg-orange-600/15 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl" />
+          </>
+        );
+      case 'cyberpunk':
+        return (
+          <>
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-fuchsia-600/15 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/3 -right-40 w-96 h-96 bg-violet-600/15 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl" />
+          </>
+        );
+      default:
+        return (
+          <>
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl" />
+          </>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200 relative overflow-x-hidden">
       {/* Background Neural Ambient Mesh */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl" />
+        {getThemeBackground()}
       </div>
 
       {/* Top Header */}
@@ -347,6 +412,8 @@ export const App: React.FC = () => {
         onOpenSnapshot={() => setIsSnapshotOpen(true)}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onResetWorkspace={handleResetWorkspace}
         isWiringMode={isWiringMode}
         onToggleWiring={() => {
@@ -465,6 +532,7 @@ export const App: React.FC = () => {
                 synapses={synapses}
                 onAddSynapse={(link) => setSynapses((prev) => [...prev, link])}
                 onRemoveSynapse={handleRemoveSynapse}
+                onUpdateSynapse={handleUpdateSynapse}
                 isWiringMode={isWiringMode}
                 activePort={activePort}
                 onSelectPort={handleSelectPort}
@@ -493,6 +561,7 @@ export const App: React.FC = () => {
                 synapses={synapses}
                 onAddSynapse={(link) => setSynapses((prev) => [...prev, link])}
                 onRemoveSynapse={handleRemoveSynapse}
+                onUpdateSynapse={handleUpdateSynapse}
                 isWiringMode={isWiringMode}
                 activePort={activePort}
                 onSelectPort={handleSelectPort}
@@ -573,6 +642,8 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onToggleSound={() => {
           const nextVal = !settings.soundEnabled;
           const updated = { ...settings, soundEnabled: nextVal };
@@ -621,6 +692,22 @@ export const App: React.FC = () => {
         onClose={() => setIsHistoryOpen(false)}
         history={history}
         onRestore={handleRestoreHistory}
+      />
+
+      {/* Cortex Copilot AI Drawer */}
+      <CortexCopilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        widgets={widgets}
+        synapses={synapses}
+        busState={busState}
+        onApplyMorph={handleMorph}
+      />
+
+      {/* Keyboard Shortcuts Help Modal */}
+      <ShortcutsHelpModal
+        isOpen={isShortcutsHelpOpen}
+        onClose={() => setIsShortcutsHelpOpen(false)}
       />
     </div>
   );

@@ -2,8 +2,10 @@ import React from 'react';
 import { soundEngine } from '../lib/soundEngine';
 import type { WorkspaceViewMode } from '../types/morphic';
 import {
+  Brain,
   Cpu,
   Download,
+  HelpCircle,
   History,
   LayoutGrid,
   Orbit,
@@ -24,6 +26,8 @@ interface Props {
   onOpenSnapshot: () => void;
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
+  onOpenCopilot?: () => void;
+  onOpenShortcutsHelp?: () => void;
   onResetWorkspace: () => void;
   isWiringMode: boolean;
   onToggleWiring: () => void;
@@ -39,6 +43,8 @@ export const Header: React.FC<Props> = ({
   onOpenSnapshot,
   onOpenHistory,
   onOpenPresentationDeck,
+  onOpenCopilot,
+  onOpenShortcutsHelp,
   onResetWorkspace,
   isWiringMode,
   onToggleWiring,
@@ -134,6 +140,21 @@ export const Header: React.FC<Props> = ({
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
+          {/* Cortex Copilot AI Drawer */}
+          {onOpenCopilot && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onOpenCopilot();
+              }}
+              className="flex items-center gap-1.5 text-xs bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/50 text-cyan-300 hover:text-white px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+              title="Cortex Copilot (ワークスペース共生AI診断・対話)"
+            >
+              <Brain className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline">Cortex AI</span>
+            </button>
+          )}
+
           {/* Presentation Deck Mode */}
           <button
             onClick={() => {
@@ -171,6 +192,20 @@ export const Header: React.FC<Props> = ({
           >
             <History className="w-4 h-4 text-purple-400" />
           </button>
+
+          {/* Shortcuts Help */}
+          {onOpenShortcutsHelp && (
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                onOpenShortcutsHelp();
+              }}
+              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-cyan-300 rounded-lg transition-colors"
+              title="キーボードショートカット一覧 (?)"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Settings */}
           <button

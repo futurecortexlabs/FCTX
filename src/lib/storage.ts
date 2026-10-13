@@ -1,5 +1,4 @@
-// Storage management for FCTX Morphic Workspace
-import type { MorphicWidget, SynapseLink, CortexThoughtLog } from '../types/morphic';
+import type { MorphicWidget, SynapseLink, CortexThoughtLog, WorkspaceTheme } from '../types/morphic';
 
 const STORAGE_KEYS = {
   WIDGETS: 'fctx_morphic_widgets_v1',
@@ -11,10 +10,11 @@ const STORAGE_KEYS = {
 
 export interface WorkspaceSettings {
   soundEnabled: boolean;
-  ambientFrequency: 'alpha' | 'theta' | 'gamma' | 'deepspace';
+  ambientFrequency: 'alpha' | 'theta' | 'gamma' | 'deepspace' | 'delta';
   ambientVolume: number;
   synapticGlow: boolean;
   autoMorphOnInput: boolean;
+  theme: WorkspaceTheme;
 }
 
 export const defaultSettings: WorkspaceSettings = {
@@ -23,6 +23,7 @@ export const defaultSettings: WorkspaceSettings = {
   ambientVolume: 0.3,
   synapticGlow: true,
   autoMorphOnInput: true,
+  theme: 'void',
 };
 
 export function loadSavedWidgets(): MorphicWidget[] | null {

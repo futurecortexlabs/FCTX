@@ -8,6 +8,7 @@ interface Props {
   synapses: SynapseLink[];
   onAddSynapse: (link: SynapseLink) => void;
   onRemoveSynapse: (linkId: string) => void;
+  onUpdateSynapse?: (updated: SynapseLink) => void;
   isWiringMode: boolean;
   activePort: { widgetId: string; key: string; direction: 'in' | 'out' } | null;
   onSelectPort: (port: { widgetId: string; key: string; direction: 'in' | 'out' } | null) => void;
@@ -17,6 +18,7 @@ export const SynapseCableOverlay: React.FC<Props> = ({
   widgets,
   synapses,
   onRemoveSynapse,
+  onUpdateSynapse,
   isWiringMode,
 }) => {
   const [cableCoords, setCableCoords] = useState<
@@ -28,6 +30,7 @@ export const SynapseCableOverlay: React.FC<Props> = ({
       y2: number;
       sourceTitle: string;
       targetTitle: string;
+      link: SynapseLink;
     }>
   >([]);
 
@@ -67,6 +70,7 @@ export const SynapseCableOverlay: React.FC<Props> = ({
           y2,
           sourceTitle,
           targetTitle,
+          link: syn,
         };
       })
       .filter(Boolean) as Array<{
@@ -77,6 +81,7 @@ export const SynapseCableOverlay: React.FC<Props> = ({
       y2: number;
       sourceTitle: string;
       targetTitle: string;
+      link: SynapseLink;
     }>;
 
     setCableCoords(coords);
@@ -160,36 +165,56 @@ export const SynapseCableOverlay: React.FC<Props> = ({
             {/* Target node circle */}
             <circle cx={c.x2} cy={c.y2} r="4" fill="#38bdf8" />
 
-            {/* Midpoint badge with delete action when in wiring mode */}
-            {isWiringMode && (
-              <g transform={`translate(${midX - 12}, ${midY - 12})`} className="cursor-pointer">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="12"
-                  fill="#1e1b4b"
-                  stroke="#ef4444"
-                  strokeWidth="1.5"
-                  className="hover:scale-110 transition-transform"
-                  onClick={() => {
+            {/* Midpoint interactive conduit badge */}
+            <foreignObject
+              x={midX - 70}
+              y={midY - 14}
+              width="140"
+              height="28"
+              className="overflow-visible pointer-events-auto"
+            >
+              <div className="flex items-center justify-between gap-1 bg-slate-950/95 border border-indigo-500/50 hover:border-cyan-400 rounded-full px-2 py-0.5 shadow-xl text-[10px] font-mono backdrop-blur-md transition-all group-hover:scale-105">
+                <span
+                  className="text-slate-300 truncate max-w-[60px]"
+                  title={`${c.sourceTitle}: ${c.link.sourceKey} ➔ ${c.targetTitle}: ${c.link.targetKey}`}
+                >
+                  {c.link.sourceKey}
+                </span>
+
+                {/* Multiplier toggle pill */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    soundEngine.playSynapsePulse();
+                    if (onUpdateSynapse) {
+                      const scales = [1.0, 1.5, 2.0, 0.5, 0.1];
+                      const currentMult = c.link.multiplier ?? 1.0;
+                      const nextIdx = (scales.indexOf(currentMult) + 1) % scales.length;
+                      onUpdateSynapse({ ...c.link, multiplier: scales[nextIdx] });
+                    }
+                  }}
+                  className="px-1.5 py-0.2 rounded-full bg-indigo-900/70 hover:bg-indigo-700 text-cyan-300 font-bold border border-indigo-700/60"
+                  title="クリックして増幅倍率を切り替え"
+                >
+                  ×{c.link.multiplier ?? 1.0}
+                </button>
+
+                {/* Disconnect button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     soundEngine.playClick();
                     onRemoveSynapse(c.id);
                   }}
-                />
-                <foreignObject x="4" y="4" width="16" height="16">
-                  <div
-                    className="w-full h-full flex items-center justify-center text-rose-400 hover:text-white"
-                    onClick={() => {
-                      soundEngine.playClick();
-                      onRemoveSynapse(c.id);
-                    }}
-                    title="シナプス配線を切断"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </div>
-                </foreignObject>
-              </g>
-            )}
+                  className="text-slate-500 hover:text-rose-400 p-0.5 rounded transition-colors"
+                  title="配線を切断"
+                >
+                  <Trash2 className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            </foreignObject>
           </g>
         );
       })}
