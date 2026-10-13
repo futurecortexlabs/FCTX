@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Compass,
+  Copy,
   Eye,
   FileText,
   GitBranch,
@@ -34,6 +35,7 @@ interface Props {
   widget: MorphicWidget;
   onUpdate: (updated: MorphicWidget) => void;
   onRemove: (id: string) => void;
+  onDuplicate?: (widget: MorphicWidget) => void;
   onEmitOutput?: (key: string, value: number) => void;
   onZenFocus?: (widget: MorphicWidget) => void;
   isWiringMode?: boolean;
@@ -45,6 +47,7 @@ export const WidgetContainer: React.FC<Props> = ({
   widget,
   onUpdate,
   onRemove,
+  onDuplicate,
   onEmitOutput,
   onZenFocus,
   isWiringMode,
@@ -191,6 +194,20 @@ export const WidgetContainer: React.FC<Props> = ({
               title="ゼン・没入フォーカスモード (全画面集中)"
             >
               <Eye className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {/* Duplicate Widget */}
+          {onDuplicate && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onDuplicate(widget);
+              }}
+              className="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 rounded-lg transition-colors"
+              title="モジュールを複製 (比較・バリエーション作成)"
+            >
+              <Copy className="w-3.5 h-3.5" />
             </button>
           )}
 

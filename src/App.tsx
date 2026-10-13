@@ -27,7 +27,7 @@ import { HistoryDrawer, type HistoryEntry } from './components/modals/HistoryDra
 import { PresentationDeckModal } from './components/modals/PresentationDeckModal';
 import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
-import { propagateSynapseValues } from './lib/synapseManager';
+import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
 import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -250,6 +250,50 @@ export const App: React.FC = () => {
     setSynapses((prev) => prev.filter((s) => s.sourceWidgetId !== id && s.targetWidgetId !== id));
   };
 
+  const handleDuplicateWidget = (widget: MorphicWidget) => {
+    soundEngine.playMorph();
+    const cloned: MorphicWidget = {
+      ...JSON.parse(JSON.stringify(widget)),
+      id: `${widget.type}_${Date.now()}`,
+      title: `${widget.title} (複製)`,
+      createdAt: Date.now(),
+      position: widget.position
+        ? { x: widget.position.x + 30, y: widget.position.y + 30 }
+        : undefined,
+    };
+    setWidgets((prev) => [cloned, ...prev]);
+    setActiveReasoning(`モジュール「${widget.title}」を複製しました。`);
+  };
+
+  const handleAutoWireSynapses = () => {
+    soundEngine.playMorph();
+    const generated = autoGenerateSynapses(widgets);
+    if (generated.length === 0) {
+      setActiveReasoning('現在のモジュール構成から適合する直結シナプスを検出できませんでした。');
+      return;
+    }
+    setSynapses((prev) => {
+      const existingKeys = new Set(
+        prev.map((s) => `${s.sourceWidgetId}:${s.sourceKey}->${s.targetWidgetId}:${s.targetKey}`)
+      );
+      const newLinks = generated.filter(
+        (g) => !existingKeys.has(`${g.sourceWidgetId}:${g.sourceKey}->${g.targetWidgetId}:${g.targetKey}`)
+      );
+      return [...prev, ...newLinks];
+    });
+    setActiveReasoning(`🧠 シナプス自動接続: ${generated.length} 本のリアクティブ・データパイプを確立しました。`);
+  };
+
+  const handleClearSynapses = () => {
+    soundEngine.playClick();
+    setSynapses([]);
+    setActiveReasoning('すべてのシナプス配線を解除しました。');
+  };
+
+  const handleInjectSignal = (key: string, value: number) => {
+    setBusState((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleEmitOutput = (key: string, value: number) => {
     setBusState((prev) => ({ ...prev, [key]: value }));
   };
@@ -324,7 +368,13 @@ export const App: React.FC = () => {
         />
 
         {/* Synapse State Bus Data Conduit */}
-        <SynapseBusViewer busState={busState} />
+        <SynapseBusViewer
+          busState={busState}
+          synapseCount={synapses.length}
+          onAutoWire={handleAutoWireSynapses}
+          onClearSynapses={handleClearSynapses}
+          onInjectSignal={handleInjectSignal}
+        />
 
         {/* Morphic Workspace Viewport */}
         <div className="space-y-4 relative">
@@ -403,6 +453,7 @@ export const App: React.FC = () => {
                 widgets={widgets}
                 onUpdateWidget={handleUpdateWidget}
                 onRemoveWidget={handleRemoveWidget}
+                onDuplicateWidget={handleDuplicateWidget}
                 onEmitOutput={handleEmitOutput}
                 onZenFocus={(w) => setZenWidget(w)}
                 isWiringMode={isWiringMode}
@@ -428,6 +479,7 @@ export const App: React.FC = () => {
                     widget={widget}
                     onUpdate={handleUpdateWidget}
                     onRemove={handleRemoveWidget}
+                    onDuplicate={handleDuplicateWidget}
                     onEmitOutput={handleEmitOutput}
                     onZenFocus={(w) => setZenWidget(w)}
                     isWiringMode={isWiringMode}
@@ -500,6 +552,7 @@ export const App: React.FC = () => {
                 handleRemoveWidget(id);
                 setZenWidget(null);
               }}
+              onDuplicate={handleDuplicateWidget}
               onEmitOutput={handleEmitOutput}
             />
           </div>

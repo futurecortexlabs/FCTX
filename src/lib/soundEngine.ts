@@ -117,7 +117,7 @@ class SoundEngine {
   }
 
   // Ambient binaural / neural focus sound
-  public startAmbient(preset: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace' = 'alpha', volume: number = 0.2) {
+  public startAmbient(preset: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace' | 'delta' = 'alpha', volume: number = 0.2) {
     if (!this.isEnabled) return;
     this.stopAmbient();
     try {
@@ -171,6 +171,10 @@ class SoundEngine {
 
       if (preset === 'theta') beatFreq = 6; // Deep creativity / intuition
       if (preset === 'gamma') beatFreq = 40; // High cognitive throughput
+      if (preset === 'delta') {
+        baseFreq = 108; // 108Hz harmonic carrier
+        beatFreq = 2.5; // Delta 2.5Hz (Deep restoration / subconscious integration)
+      }
       if (preset === 'deepspace') {
         baseFreq = 64; // Sub-harmonic deep drone
         beatFreq = 3.5;

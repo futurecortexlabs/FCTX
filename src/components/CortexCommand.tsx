@@ -2,7 +2,22 @@ import React, { useState } from 'react';
 import { soundEngine } from '../lib/soundEngine';
 import { SHOWCASE_PRESETS } from '../lib/synthesizer';
 import type { ThoughtPreset } from '../types/morphic';
-import { Bot, Flame, Lightbulb, Loader2, Mic, MicOff, Rocket, ShieldAlert, Sparkles, Wand2 } from 'lucide-react';
+import {
+  Bot,
+  Brain,
+  Compass,
+  Flame,
+  GitBranch,
+  Lightbulb,
+  Loader2,
+  Mic,
+  MicOff,
+  Rocket,
+  Scale,
+  ShieldAlert,
+  Sparkles,
+  Wand2,
+} from 'lucide-react';
 
 interface Props {
   onMorph: (prompt: string) => void;
@@ -88,6 +103,14 @@ export const CortexCommand: React.FC<Props> = ({
         return <Rocket className="w-3.5 h-3.5 text-indigo-400" />;
       case 'ShieldAlert':
         return <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />;
+      case 'Brain':
+        return <Brain className="w-3.5 h-3.5 text-purple-400" />;
+      case 'GitBranch':
+        return <GitBranch className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'Scale':
+        return <Scale className="w-3.5 h-3.5 text-amber-400" />;
+      case 'Compass':
+        return <Compass className="w-3.5 h-3.5 text-emerald-400" />;
       default:
         return <Flame className="w-3.5 h-3.5 text-cyan-400" />;
     }

@@ -8,6 +8,7 @@ interface Props {
   widgets: MorphicWidget[];
   onUpdateWidget: (updated: MorphicWidget) => void;
   onRemoveWidget: (id: string) => void;
+  onDuplicateWidget?: (widget: MorphicWidget) => void;
   onEmitOutput?: (key: string, value: number) => void;
   onZenFocus?: (widget: MorphicWidget) => void;
   isWiringMode: boolean;
@@ -19,6 +20,7 @@ export const SpatialCanvas: React.FC<Props> = ({
   widgets,
   onUpdateWidget,
   onRemoveWidget,
+  onDuplicateWidget,
   onEmitOutput,
   onZenFocus,
   isWiringMode,
@@ -254,6 +256,7 @@ export const SpatialCanvas: React.FC<Props> = ({
                 widget={w}
                 onUpdate={onUpdateWidget}
                 onRemove={onRemoveWidget}
+                onDuplicate={onDuplicateWidget}
                 onEmitOutput={onEmitOutput}
                 onZenFocus={onZenFocus}
                 isWiringMode={isWiringMode}

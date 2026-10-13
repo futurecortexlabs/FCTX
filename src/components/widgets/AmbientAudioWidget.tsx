@@ -29,7 +29,7 @@ export const AmbientAudioWidget: React.FC<Props> = ({ widget, onUpdate }) => {
     }
   };
 
-  const handlePresetChange = (preset: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace') => {
+  const handlePresetChange = (preset: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace' | 'delta') => {
     soundEngine.playClick();
     const updated = {
       ...widget,
@@ -57,6 +57,7 @@ export const AmbientAudioWidget: React.FC<Props> = ({ widget, onUpdate }) => {
     { id: 'gamma', label: 'ガンマ波 (40Hz)', desc: '知覚同期・高次情報処理' },
     { id: 'rain', label: 'プロシージャル雨音', desc: 'ピンクノイズ集中・雑音遮断' },
     { id: 'deepspace', label: 'ディープスペース (3.5Hz)', desc: '無重力重低音ドローン' },
+    { id: 'delta', label: 'デルタ波 (2.5Hz)', desc: '深層休息・潜在意識統合' },
   ] as const;
 
   return (

@@ -92,7 +92,7 @@ export interface MorphicWidget {
     criteria?: TradeoffCriterion[];
     options?: TradeoffOption[];
     content?: string;
-    soundPreset?: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace';
+    soundPreset?: 'alpha' | 'theta' | 'gamma' | 'rain' | 'deepspace' | 'delta';
     volume?: number;
     customFields?: Array<{
       id: string;

@@ -251,3 +251,93 @@ export function propagateSynapseValues(
 
   return { updatedWidgets, hasChanges };
 }
+
+/**
+ * Intelligently discovers and establishes neural synapse conduits across active widgets
+ */
+export function autoGenerateSynapses(widgets: MorphicWidget[]): SynapseLink[] {
+  const links: SynapseLink[] = [];
+  const linkKeySet = new Set<string>();
+
+  const addLink = (
+    sourceId: string,
+    sourceKey: string,
+    targetId: string,
+    targetKey: string,
+    multiplier?: number
+  ) => {
+    const key = `${sourceId}:${sourceKey}->${targetId}:${targetKey}`;
+    if (!linkKeySet.has(key)) {
+      linkKeySet.add(key);
+      links.push({
+        id: `auto_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        sourceWidgetId: sourceId,
+        sourceKey,
+        targetWidgetId: targetId,
+        targetKey,
+        multiplier,
+      });
+    }
+  };
+
+  for (const src of widgets) {
+    const outPorts = getWidgetOutputPorts(src);
+    for (const tgt of widgets) {
+      if (src.id === tgt.id) continue;
+      const inPorts = getWidgetInputPorts(tgt);
+
+      // Scenario 1: Simulation output -> Tradeoff criteria weight
+      if (src.type === 'simulation' && tgt.type === 'tradeoff') {
+        const profitPort = outPorts.find(
+          (p) => p.name === 'profit' || p.name === 'annual_profit' || p.name === 'mrr'
+        );
+        const costCrit = inPorts.find(
+          (p) =>
+            p.name.includes('cost') ||
+            p.name.includes('c3') ||
+            p.label.includes('コスト') ||
+            p.label.includes('費用')
+        );
+        if (profitPort && costCrit) {
+          addLink(src.id, profitPort.name, tgt.id, costCrit.name);
+        }
+      }
+
+      // Scenario 2: Pipeline completion -> Simulation variable
+      if (src.type === 'pipeline' && tgt.type === 'simulation') {
+        const progPort = outPorts.find((p) => p.name === 'progress_percent');
+        const targetVar = inPorts.find(
+          (p) =>
+            p.name === 'cvr' ||
+            p.name === 'efficiency' ||
+            p.name === 'iterations' ||
+            p.name === 'throughput'
+        );
+        if (progPort && targetVar) {
+          const mult = targetVar.name === 'cvr' ? 0.05 : 0.08;
+          addLink(src.id, progPort.name, tgt.id, targetVar.name, mult);
+        }
+      }
+
+      // Scenario 3: Matrix critical count -> Simulation OPEX or Risk factor
+      if (src.type === 'matrix' && tgt.type === 'simulation') {
+        const critPort = outPorts.find((p) => p.name === 'critical_count');
+        const opexVar = inPorts.find((p) => p.name === 'opex' || p.name === 'effort');
+        if (critPort && opexVar) {
+          addLink(src.id, critPort.name, tgt.id, opexVar.name, 100000);
+        }
+      }
+
+      // Scenario 4: Exact key match between output and input
+      for (const op of outPorts) {
+        for (const ip of inPorts) {
+          if (op.name === ip.name) {
+            addLink(src.id, op.name, tgt.id, ip.name);
+          }
+        }
+      }
+    }
+  }
+
+  return links;
+}

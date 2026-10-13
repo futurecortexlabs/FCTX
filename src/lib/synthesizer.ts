@@ -298,7 +298,364 @@ export function synthesizeWidgetsFromPrompt(
     });
   }
 
-  // 5. Default General / Strategic Morphing Workspace
+  // 5. Product Launch, OKR, Roadmap, Feature Delivery
+  else if (
+    p.includes('プロダクト') ||
+    p.includes('ローンチ') ||
+    p.includes('okr') ||
+    p.includes('ロードマップ') ||
+    p.includes('リリース') ||
+    p.includes('launch') ||
+    p.includes('feature') ||
+    p.includes('product')
+  ) {
+    reasoning = '新プロダクトのローンチ戦略とOKR進行管理を検知。ノーススター指標シミュレーター、機能価値対複雑度レーダー、ゲートウェイ進行パイプラインを展開しました。';
+    widgets.push({
+      id: `sim_${timestamp}_1`,
+      title: 'ノーススター指標 & 成長ループ予測',
+      type: 'simulation',
+      category: 'Product & OKR',
+      description: '初期獲得数、初回オンボーディング突破率、リテンション率から月間アクティブ率とLTVを即時試算',
+      iconName: 'Sliders',
+      accentColor: 'indigo',
+      size: 'wide',
+      createdAt: timestamp,
+      outputKey: 'projected_dau',
+      data: {
+        variables: [
+          { id: 'signups', name: 'signups', label: '月間新規登録者数', value: 8000, min: 500, max: 100000, step: 500, unit: '人' },
+          { id: 'activation', name: 'activation', label: '初回オンボーディング突破率', value: 45, min: 10, max: 90, step: 1, unit: '%' },
+          { id: 'w1_retention', name: 'w1_retention', label: '1週後リテンション率 (W1)', value: 38, min: 5, max: 80, step: 1, unit: '%' },
+          { id: 'k_factor', name: 'k_factor', label: 'バイラル拡散係数 (K-Factor)', value: 1.2, min: 0.1, max: 3.0, step: 0.1, unit: '係数' },
+        ],
+        formulas: [
+          { id: 'activated_users', label: '月間コア定着ユーザー数', unit: '人', calculate: 'signups * (activation / 100)' },
+          { id: 'viral_spread', label: 'バイラル経由の二次流入数', unit: '人', calculate: '(signups * (activation / 100)) * k_factor' },
+          { id: 'projected_dau', label: '推定DAUベースライン', unit: '人', calculate: '((signups * (activation / 100)) * (w1_retention / 100)) * 30' },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `matrix_${timestamp}_2`,
+      title: '機能優先度 (価値 vs 実装複雑度)',
+      type: 'matrix',
+      category: 'Product Prioritization',
+      description: '顧客へのインパクトとエンジニアリング工数を2軸マッピング',
+      iconName: 'Compass',
+      accentColor: 'cyan',
+      size: 'normal',
+      createdAt: timestamp + 1,
+      data: {
+        matrixAxes: {
+          xLabel: '実装複雑度 (低工数 → 高工数)',
+          yLabel: '顧客価値・インパクト (低 → 極大)',
+          quadrants: ['即時着手 (Quick Wins)', '戦略的コア機能 (Big Bets)', '空き時間対応 (Fill-ins)', '見送り・スコープ外'],
+        },
+        matrixItems: [
+          { id: 'okr_f1', label: 'ワンクリックOAuth登録', x: 25, y: 85, category: 'Growth' },
+          { id: 'okr_f2', label: 'リアルタイム共同編集エンジン', x: 80, y: 92, category: 'Core' },
+          { id: 'okr_f3', label: 'Slack/Discord通知連携', x: 30, y: 70, category: 'Integration' },
+          { id: 'okr_f4', label: 'ダークモード微調整', x: 20, y: 35, category: 'Polish' },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `pipe_${timestamp}_3`,
+      title: 'ローンチ・ステージゲート進行管理',
+      type: 'pipeline',
+      category: 'Launch Gates',
+      description: 'アルファ検証からグローバル一般公開までの必須チェックポイント',
+      iconName: 'GitBranch',
+      accentColor: 'emerald',
+      size: 'wide',
+      createdAt: timestamp + 2,
+      data: {
+        stages: [
+          {
+            id: 'gate_1',
+            title: 'Gate 1: Private Alpha (クローズド)',
+            items: [
+              { id: 'g1_1', text: '選定した友好企業20社でのDogfooding検証', done: true, priority: 'high' },
+              { id: 'g1_2', text: 'コア利用シナリオのP99レイテンシ150ms未満達成', done: true, priority: 'high' },
+            ],
+          },
+          {
+            id: 'gate_2',
+            title: 'Gate 2: Public Beta (事前登録解放)',
+            items: [
+              { id: 'g2_1', text: 'Stripe従量課金および自動インボイス発行の疎通', done: false, priority: 'high' },
+              { id: 'g2_2', text: 'ランディングページCVR 5%以上への最適化', done: false, priority: 'med' },
+            ],
+          },
+          {
+            id: 'gate_3',
+            title: 'Gate 3: General Availability (一般公開)',
+            items: [
+              { id: 'g3_1', text: 'プロダクトハント & テックプレス一斉ローンチ', done: false, priority: 'high' },
+              { id: 'g3_2', text: '24/7オンコール体制とSLA 99.9%監視確立', done: false, priority: 'med' },
+            ],
+          },
+        ],
+      },
+    });
+  }
+
+  // 6. Agile Sprint, Velocity & Daily Retrospective
+  else if (
+    p.includes('スプリント') ||
+    p.includes('アジャイル') ||
+    p.includes('レトロ') ||
+    p.includes('カンバン') ||
+    p.includes('スクラム') ||
+    p.includes('sprint') ||
+    p.includes('agile') ||
+    p.includes('retro') ||
+    p.includes('scrum')
+  ) {
+    reasoning = 'アジャイル開発スプリントの生産性と振り返りを検知。スプリントベロシティ試算、カンバン実行フロー、KPTレトロスペクティブを合成しました。';
+    widgets.push({
+      id: `sim_${timestamp}_1`,
+      title: 'スプリント・キャパシティ & ベロシティ予測',
+      type: 'simulation',
+      category: 'Agile Velocity',
+      description: '開発エンジニア数、稼働日数、割り込み比率からスプリント達成可能ストーリーポイントを算出',
+      iconName: 'Sliders',
+      accentColor: 'indigo',
+      size: 'normal',
+      createdAt: timestamp,
+      outputKey: 'net_velocity',
+      data: {
+        variables: [
+          { id: 'devs', name: 'devs', label: '開発エンジニア人数', value: 5, min: 1, max: 20, step: 1, unit: '人' },
+          { id: 'days', name: 'days', label: 'スプリント日数', value: 10, min: 5, max: 20, step: 1, unit: '日' },
+          { id: 'focus_factor', name: 'focus_factor', label: '集中係数 (会議除外)', value: 0.75, min: 0.4, max: 1.0, step: 0.05, unit: '係数' },
+          { id: 'pts_per_day', name: 'pts_per_day', label: '1人日あたり消化基準', value: 1.6, min: 0.5, max: 4.0, step: 0.1, unit: 'pt' },
+        ],
+        formulas: [
+          { id: 'gross_pts', label: '総投入可能キャパシティ', unit: 'pt', calculate: 'devs * days * pts_per_day' },
+          { id: 'net_velocity', label: '実効コミット可能ポイント', unit: 'pt', calculate: '(devs * days * pts_per_day) * focus_factor' },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `pipe_${timestamp}_2`,
+      title: 'スプリント進行カンバン (Current Sprint)',
+      type: 'pipeline',
+      category: 'Sprint Board',
+      description: 'スプリント内タスクのステージ進行とボトルネック可視化',
+      iconName: 'GitBranch',
+      accentColor: 'cyan',
+      size: 'wide',
+      createdAt: timestamp + 1,
+      data: {
+        stages: [
+          {
+            id: 'sp_backlog',
+            title: 'To Do (Ready to Dev)',
+            items: [
+              { id: 'spt_1', text: 'ユーザー権限ロール(RBAC)のバックエンドAPI実装', done: true, priority: 'high' },
+              { id: 'spt_2', text: 'CSV一括インポート時のバリデーション強化', done: true, priority: 'med' },
+            ],
+          },
+          {
+            id: 'sp_wip',
+            title: 'In Progress / Code Review',
+            items: [
+              { id: 'spt_3', text: 'WebSocket切断時の自動再接続Exponential Backoff', done: false, priority: 'high' },
+              { id: 'spt_4', text: 'E2E Playwrightテストシナリオの拡充', done: false, priority: 'med' },
+            ],
+          },
+          {
+            id: 'sp_done',
+            title: 'Testing & Deployed',
+            items: [
+              { id: 'spt_5', text: '本番デプロイ自動化パイプラインの正常稼働', done: false, priority: 'low' },
+            ],
+          },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `note_${timestamp}_3`,
+      title: 'KPT レトロスペクティブ (振り返りノート)',
+      type: 'synapse_notes',
+      category: 'Agile Retro',
+      description: 'スプリント終了時のKeep/Problem/Tryをリアルタイム集約',
+      iconName: 'FileText',
+      accentColor: 'emerald',
+      size: 'normal',
+      createdAt: timestamp + 2,
+      data: {
+        content: `### Sprint #42 KPT 共有事項
+- **Keep (良かったこと・継続)**:
+  - PRレビューの初回応答時間が平均2時間以内に短縮された。
+  - シナプス配線機能のプロトタイプが予定より2日前倒しで動作した。
+- **Problem (課題・困りごと)**:
+  - スプリント中盤で突発的な仕様変更が入り、ベロシティが15%低下した。
+- **Try (次回スプリントでの挑戦)**:
+  - 次回から変更要請には「同等工数の別チケットのトレードオフ」を即時適用する。`,
+      },
+    });
+  }
+
+  // 7. Technical Debt, Refactoring & Modernization ROI
+  else if (
+    p.includes('負債') ||
+    p.includes('リファクタ') ||
+    p.includes('モダン') ||
+    p.includes('アーキテクチャ') ||
+    p.includes('技術') ||
+    p.includes('debt') ||
+    p.includes('refactor') ||
+    p.includes('migration')
+  ) {
+    reasoning = '技術的負債の返済投資とリアーキテクチャROIを検知。負債による工数損失シミュレーター、脆性対影響度レーダー、リファクタリング方針評価エンジンを合成しました。';
+    widgets.push({
+      id: `sim_${timestamp}_1`,
+      title: '技術的負債 返済投資 & ROIシミュレーター',
+      type: 'simulation',
+      category: 'Tech Debt ROI',
+      description: '負債による週次開発遅延時間と、リファクタ投資による工数回収期間を試算',
+      iconName: 'Sliders',
+      accentColor: 'rose',
+      size: 'wide',
+      createdAt: timestamp,
+      outputKey: 'annual_hours_saved',
+      data: {
+        variables: [
+          { id: 'team_size', name: 'team_size', label: 'エンジニア組織規模', value: 12, min: 2, max: 80, step: 1, unit: '人' },
+          { id: 'friction_hours', name: 'friction_hours', label: '負債/手作業による週次損失', value: 6.5, min: 1.0, max: 20.0, step: 0.5, unit: 'h/週/人' },
+          { id: 'refactor_investment', name: 'refactor_investment', label: 'リファクタ専任工数投資', value: 160, min: 40, max: 1000, step: 20, unit: '人時' },
+          { id: 'reduction_rate', name: 'reduction_rate', label: '改修後の損失削減率', value: 70, min: 20, max: 95, step: 5, unit: '%' },
+        ],
+        formulas: [
+          { id: 'weekly_lost', label: '現状の組織全体損失工数', unit: 'h/週', calculate: 'team_size * friction_hours' },
+          { id: 'annual_hours_saved', label: '改修後の年間創出可能時間', unit: '時間/年', calculate: '(team_size * friction_hours * 48) * (reduction_rate / 100)' },
+          { id: 'payback_weeks', label: '投資回収完了所要期間', unit: '週', calculate: 'refactor_investment / ((team_size * friction_hours) * (reduction_rate / 100))' },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `trade_${timestamp}_2`,
+      title: 'リアーキテクチャ手法 選択トレードオフ',
+      type: 'tradeoff',
+      category: 'Architecture Decision',
+      description: '全面リプレイス vs ストラングラー・フィグ移行パターンの定量比較',
+      iconName: 'Scale',
+      accentColor: 'purple',
+      size: 'wide',
+      createdAt: timestamp + 1,
+      data: {
+        criteria: [
+          { id: 'c_speed', name: '新機能追加への影響最小化', weight: 5 },
+          { id: 'c_safety', name: '本番無停止・低リスク性', weight: 5 },
+          { id: 'c_elegance', name: '将来的な設計純度・美しさ', weight: 3 },
+          { id: 'c_cost', name: '初期工数投資の抑制', weight: 4 },
+        ],
+        options: [
+          {
+            id: 'opt_strangler',
+            title: '案1: ストラングラー・フィグ段階的置換',
+            pros: ['常に本番稼働しつつ高頻度デプロイ可能', '途中でのロールバックが容易'],
+            cons: ['新旧両システムの暫定同期アダプターが必要', '移行完了まで期間を要する'],
+            scores: { c_speed: 8, c_safety: 9, c_elegance: 6, c_cost: 7 },
+          },
+          {
+            id: 'opt_bigbang',
+            title: '案2: 完全新規リライト (Big Bang Rewrite)',
+            pros: ['旧遺産に引きずられない完全なクリーンアーキテクチャ', '最新フレームワークの恩恵をフル活用'],
+            cons: ['リリースまで半年以上機能開発が凍結', '初回切り替え時の未知バグリスクが極大'],
+            scores: { c_speed: 2, c_safety: 3, c_elegance: 10, c_cost: 3 },
+          },
+        ],
+      },
+    });
+  }
+
+  // 8. Startup Runway, Burn Rate & Valuation Model
+  else if (
+    p.includes('資金調達') ||
+    p.includes('バーンレート') ||
+    p.includes('ランウェイ') ||
+    p.includes('投資家') ||
+    p.includes('vc') ||
+    p.includes('pitch') ||
+    p.includes('runway') ||
+    p.includes('burn') ||
+    p.includes('fundraising')
+  ) {
+    reasoning = 'スタートアップ資金調達とランウェイ生存予測を検知。月次バーンレート/残存月数シミュレーター、投資家ファンネルパイプライン、調達ターム評価メモを合成しました。';
+    widgets.push({
+      id: `sim_${timestamp}_1`,
+      title: 'バーンレート & ランウェイ (生存可能月数) 試算',
+      type: 'simulation',
+      category: 'Capital & Runway',
+      description: '現預金残高、月次支出、売上成長率からランウェイ月数と次回調達デッドラインを算出',
+      iconName: 'Sliders',
+      accentColor: 'amber',
+      size: 'wide',
+      createdAt: timestamp,
+      outputKey: 'runway_months',
+      data: {
+        variables: [
+          { id: 'cash', name: 'cash', label: '現在の手元預金残高', value: 45000000, min: 5000000, max: 200000000, step: 5000000, unit: '円' },
+          { id: 'burn', name: 'burn', label: '月間総支出 (OPEX+人件費)', value: 3800000, min: 1000000, max: 20000000, step: 200000, unit: '円' },
+          { id: 'mrr_in', name: 'mrr_in', label: '月次売上入金 (MRR)', value: 1200000, min: 0, max: 15000000, step: 100000, unit: '円' },
+        ],
+        formulas: [
+          { id: 'net_burn', label: '実質月次キャッシュアウト (Net Burn)', unit: '円', calculate: 'burn - mrr_in' },
+          { id: 'runway_months', label: '残存ランウェイ (生存可能月数)', unit: 'ヶ月', calculate: 'cash / (burn - mrr_in)' },
+        ],
+      },
+    });
+
+    widgets.push({
+      id: `pipe_${timestamp}_2`,
+      title: '資金調達ファンネル (Series A Gate)',
+      type: 'pipeline',
+      category: 'Fundraising Pipeline',
+      description: 'ピッチデック準備からタームシート締結、着金までのフェーズ管理',
+      iconName: 'GitBranch',
+      accentColor: 'indigo',
+      size: 'wide',
+      createdAt: timestamp + 1,
+      data: {
+        stages: [
+          {
+            id: 'fr_1',
+            title: '1. 準備 & ロングリスト (15社)',
+            items: [
+              { id: 'fr_i1', text: 'データルームおよび財務トラクションモデル完成', done: true, priority: 'high' },
+              { id: 'fr_i2', text: 'エンジェル投資家からの温かい紹介(Warm Intro)獲得', done: true, priority: 'high' },
+            ],
+          },
+          {
+            id: 'fr_2',
+            title: '2. パートナーミーティング',
+            items: [
+              { id: 'fr_i3', text: 'トップティアVC 3社での本ミーティング登壇', done: false, priority: 'high' },
+              { id: 'fr_i4', text: '既存顧客5社へのリファレンスコール実施', done: false, priority: 'med' },
+            ],
+          },
+          {
+            id: 'fr_3',
+            title: '3. タームシート & クロージング',
+            items: [
+              { id: 'fr_i5', text: 'リード投資家とのバリュエーション合意 & 締結', done: false, priority: 'high' },
+              { id: 'fr_i6', text: '法務デューデリジェンス通過と登記・着金完了', done: false, priority: 'high' },
+            ],
+          },
+        ],
+      },
+    });
+  }
+
+  // 9. Default General / Strategic Morphing Workspace
   else {
     reasoning = `思考テーマ「${prompt}」を解析。多角的な検討を可能にする【仮説パラメータ試算】【マイルストーン進行管理】【思考共生ノート】を動的合成しました。`;
     widgets.push({
@@ -610,6 +967,335 @@ export const SHOWCASE_PRESETS: ThoughtPreset[] = [
 - → 答え: **意図を流し込むと、その瞬間に最もふさわしい器が自ら結晶化する「可変的インターフェース」**。
 - 人間の思考スピードにツールが遅れをとらないための条件とは？
 - → 設定を強要せず、思考の文脈を先回りして道具を揃えること。`,
+        },
+      },
+    ],
+  },
+  {
+    id: 'preset_product_okr',
+    name: '新規事業ローンチ & OKR管理エンジン',
+    tagline: 'ノーススター指標シミュレーション × 機能優先度マトリクス × ローンチゲート',
+    prompt: '新プロダクトのローンチ戦略とOKR進行管理',
+    icon: 'Rocket',
+    widgets: [
+      {
+        id: 'p_okr_sim',
+        title: 'ノーススター指標 & 成長ループ予測',
+        type: 'simulation',
+        category: 'Product & OKR',
+        description: '初期獲得数、初回オンボーディング突破率、リテンション率から月間アクティブ率とLTVを即時試算',
+        iconName: 'Sliders',
+        accentColor: 'indigo',
+        size: 'wide',
+        createdAt: 1,
+        outputKey: 'projected_dau',
+        data: {
+          variables: [
+            { id: 'signups', name: 'signups', label: '月間新規登録者数', value: 8000, min: 500, max: 100000, step: 500, unit: '人' },
+            { id: 'activation', name: 'activation', label: '初回オンボーディング突破率', value: 45, min: 10, max: 90, step: 1, unit: '%' },
+            { id: 'w1_retention', name: 'w1_retention', label: '1週後リテンション率 (W1)', value: 38, min: 5, max: 80, step: 1, unit: '%' },
+            { id: 'k_factor', name: 'k_factor', label: 'バイラル拡散係数 (K-Factor)', value: 1.2, min: 0.1, max: 3.0, step: 0.1, unit: '係数' },
+          ],
+          formulas: [
+            { id: 'activated_users', label: '月間コア定着ユーザー数', unit: '人', calculate: 'signups * (activation / 100)' },
+            { id: 'viral_spread', label: 'バイラル経由の二次流入数', unit: '人', calculate: '(signups * (activation / 100)) * k_factor' },
+            { id: 'projected_dau', label: '推定DAUベースライン', unit: '人', calculate: '((signups * (activation / 100)) * (w1_retention / 100)) * 30' },
+          ],
+        },
+      },
+      {
+        id: 'p_okr_mat',
+        title: '機能優先度 (価値 vs 実装複雑度)',
+        type: 'matrix',
+        category: 'Product Prioritization',
+        description: '顧客へのインパクトとエンジニアリング工数を2軸マッピング',
+        iconName: 'Compass',
+        accentColor: 'cyan',
+        size: 'normal',
+        createdAt: 2,
+        data: {
+          matrixAxes: {
+            xLabel: '実装複雑度 (低工数 → 高工数)',
+            yLabel: '顧客価値・インパクト (低 → 極大)',
+            quadrants: ['即時着手 (Quick Wins)', '戦略的コア機能 (Big Bets)', '空き時間対応 (Fill-ins)', '見送り・スコープ外'],
+          },
+          matrixItems: [
+            { id: 'okr_f1', label: 'ワンクリックOAuth登録', x: 25, y: 85, category: 'Growth' },
+            { id: 'okr_f2', label: 'リアルタイム共同編集エンジン', x: 80, y: 92, category: 'Core' },
+            { id: 'okr_f3', label: 'Slack/Discord通知連携', x: 30, y: 70, category: 'Integration' },
+            { id: 'okr_f4', label: 'ダークモード微調整', x: 20, y: 35, category: 'Polish' },
+          ],
+        },
+      },
+      {
+        id: 'p_okr_pipe',
+        title: 'ローンチ・ステージゲート進行管理',
+        type: 'pipeline',
+        category: 'Launch Gates',
+        description: 'アルファ検証からグローバル一般公開までの必須チェックポイント',
+        iconName: 'GitBranch',
+        accentColor: 'emerald',
+        size: 'wide',
+        createdAt: 3,
+        data: {
+          stages: [
+            {
+              id: 'gate_1',
+              title: 'Gate 1: Private Alpha (クローズド)',
+              items: [
+                { id: 'g1_1', text: '選定した友好企業20社でのDogfooding検証', done: true, priority: 'high' },
+                { id: 'g1_2', text: 'コア利用シナリオのP99レイテンシ150ms未満達成', done: true, priority: 'high' },
+              ],
+            },
+            {
+              id: 'gate_2',
+              title: 'Gate 2: Public Beta (事前登録解放)',
+              items: [
+                { id: 'g2_1', text: 'Stripe従量課金および自動インボイス発行の疎通', done: false, priority: 'high' },
+                { id: 'g2_2', text: 'ランディングページCVR 5%以上への最適化', done: false, priority: 'med' },
+              ],
+            },
+            {
+              id: 'gate_3',
+              title: 'Gate 3: General Availability (一般公開)',
+              items: [
+                { id: 'g3_1', text: 'プロダクトハント & テックプレス一斉ローンチ', done: false, priority: 'high' },
+                { id: 'g3_2', text: '24/7オンコール体制とSLA 99.9%監視確立', done: false, priority: 'med' },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'preset_agile_sprint',
+    name: 'アジャイル・スプリント & デイリーレトロ',
+    tagline: 'スプリントベロシティ試算 × カンバン実行フロー × KPTレトロスペクティブ',
+    prompt: 'アジャイル開発スプリントの生産性と振り返り',
+    icon: 'GitBranch',
+    widgets: [
+      {
+        id: 'p_sp_sim',
+        title: 'スプリント・キャパシティ & ベロシティ予測',
+        type: 'simulation',
+        category: 'Agile Velocity',
+        description: '開発エンジニア数、稼働日数、割り込み比率からスプリント達成可能ストーリーポイントを算出',
+        iconName: 'Sliders',
+        accentColor: 'indigo',
+        size: 'normal',
+        createdAt: 1,
+        outputKey: 'net_velocity',
+        data: {
+          variables: [
+            { id: 'devs', name: 'devs', label: '開発エンジニア人数', value: 5, min: 1, max: 20, step: 1, unit: '人' },
+            { id: 'days', name: 'days', label: 'スプリント日数', value: 10, min: 5, max: 20, step: 1, unit: '日' },
+            { id: 'focus_factor', name: 'focus_factor', label: '集中係数 (会議除外)', value: 0.75, min: 0.4, max: 1.0, step: 0.05, unit: '係数' },
+            { id: 'pts_per_day', name: 'pts_per_day', label: '1人日あたり消化基準', value: 1.6, min: 0.5, max: 4.0, step: 0.1, unit: 'pt' },
+          ],
+          formulas: [
+            { id: 'gross_pts', label: '総投入可能キャパシティ', unit: 'pt', calculate: 'devs * days * pts_per_day' },
+            { id: 'net_velocity', label: '実効コミット可能ポイント', unit: 'pt', calculate: '(devs * days * pts_per_day) * focus_factor' },
+          ],
+        },
+      },
+      {
+        id: 'p_sp_pipe',
+        title: 'スプリント進行カンバン (Current Sprint)',
+        type: 'pipeline',
+        category: 'Sprint Board',
+        description: 'スプリント内タスクのステージ進行とボトルネック可視化',
+        iconName: 'GitBranch',
+        accentColor: 'cyan',
+        size: 'wide',
+        createdAt: 2,
+        data: {
+          stages: [
+            {
+              id: 'sp_backlog',
+              title: 'To Do (Ready to Dev)',
+              items: [
+                { id: 'spt_1', text: 'ユーザー権限ロール(RBAC)のバックエンドAPI実装', done: true, priority: 'high' },
+                { id: 'spt_2', text: 'CSV一括インポート時のバリデーション強化', done: true, priority: 'med' },
+              ],
+            },
+            {
+              id: 'sp_wip',
+              title: 'In Progress / Code Review',
+              items: [
+                { id: 'spt_3', text: 'WebSocket切断時の自動再接続Exponential Backoff', done: false, priority: 'high' },
+                { id: 'spt_4', text: 'E2E Playwrightテストシナリオの拡充', done: false, priority: 'med' },
+              ],
+            },
+            {
+              id: 'sp_done',
+              title: 'Testing & Deployed',
+              items: [
+                { id: 'spt_5', text: '本番デプロイ自動化パイプラインの正常稼働', done: false, priority: 'low' },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        id: 'p_sp_note',
+        title: 'KPT レトロスペクティブ (振り返りノート)',
+        type: 'synapse_notes',
+        category: 'Agile Retro',
+        description: 'スプリント終了時のKeep/Problem/Tryをリアルタイム集約',
+        iconName: 'FileText',
+        accentColor: 'emerald',
+        size: 'normal',
+        createdAt: 3,
+        data: {
+          content: `### Sprint #42 KPT 共有事項
+- **Keep (良かったこと・継続)**:
+  - PRレビューの初回応答時間が平均2時間以内に短縮された。
+  - シナプス配線機能のプロトタイプが予定より2日前倒しで動作した。
+- **Problem (課題・困りごと)**:
+  - スプリント中盤で突発的な仕様変更が入り、ベロシティが15%低下した。
+- **Try (次回スプリントでの挑戦)**:
+  - 次回から変更要請には「同等工数の別チケットのトレードオフ」を即時適用する。`,
+        },
+      },
+    ],
+  },
+  {
+    id: 'preset_techdebt_roi',
+    name: '技術的負債ROI評価 & モダナイゼーション戦略',
+    tagline: '負債工数損失シミュレーター × リアーキテクチャ選択トレードオフ × 移行計画',
+    prompt: '技術的負債の返済投資とリアーキテクチャROI',
+    icon: 'Scale',
+    widgets: [
+      {
+        id: 'p_td_sim',
+        title: '技術的負債 返済投資 & ROIシミュレーター',
+        type: 'simulation',
+        category: 'Tech Debt ROI',
+        description: '負債による週次開発遅延時間と、リファクタ投資による工数回収期間を試算',
+        iconName: 'Sliders',
+        accentColor: 'rose',
+        size: 'wide',
+        createdAt: 1,
+        outputKey: 'annual_hours_saved',
+        data: {
+          variables: [
+            { id: 'team_size', name: 'team_size', label: 'エンジニア組織規模', value: 12, min: 2, max: 80, step: 1, unit: '人' },
+            { id: 'friction_hours', name: 'friction_hours', label: '負債/手作業による週次損失', value: 6.5, min: 1.0, max: 20.0, step: 0.5, unit: 'h/週/人' },
+            { id: 'refactor_investment', name: 'refactor_investment', label: 'リファクタ専任工数投資', value: 160, min: 40, max: 1000, step: 20, unit: '人時' },
+            { id: 'reduction_rate', name: 'reduction_rate', label: '改修後の損失削減率', value: 70, min: 20, max: 95, step: 5, unit: '%' },
+          ],
+          formulas: [
+            { id: 'weekly_lost', label: '現状の組織全体損失工数', unit: 'h/週', calculate: 'team_size * friction_hours' },
+            { id: 'annual_hours_saved', label: '改修後の年間創出可能時間', unit: '時間/年', calculate: '(team_size * friction_hours * 48) * (reduction_rate / 100)' },
+            { id: 'payback_weeks', label: '投資回収完了所要期間', unit: '週', calculate: 'refactor_investment / ((team_size * friction_hours) * (reduction_rate / 100))' },
+          ],
+        },
+      },
+      {
+        id: 'p_td_trade',
+        title: 'リアーキテクチャ手法 選択トレードオフ',
+        type: 'tradeoff',
+        category: 'Architecture Decision',
+        description: '段階的置換 (ストラングラー・フィグ) vs 完全リライトの定量比較',
+        iconName: 'Scale',
+        accentColor: 'purple',
+        size: 'wide',
+        createdAt: 2,
+        data: {
+          criteria: [
+            { id: 'c_speed', name: '新機能追加への影響最小化', weight: 5 },
+            { id: 'c_safety', name: '本番無停止・低リスク性', weight: 5 },
+            { id: 'c_elegance', name: '将来的な設計純度・美しさ', weight: 3 },
+            { id: 'c_cost', name: '初期工数投資の抑制', weight: 4 },
+          ],
+          options: [
+            {
+              id: 'opt_strangler',
+              title: '案1: ストラングラー・フィグ段階的置換',
+              pros: ['常に本番稼働しつつ高頻度デプロイ可能', '途中でのロールバックが容易'],
+              cons: ['新旧両システムの暫定同期アダプターが必要', '移行完了まで期間を要する'],
+              scores: { c_speed: 8, c_safety: 9, c_elegance: 6, c_cost: 7 },
+            },
+            {
+              id: 'opt_bigbang',
+              title: '案2: 完全新規リライト (Big Bang Rewrite)',
+              pros: ['旧遺産に引きずられない完全なクリーンアーキテクチャ', '最新フレームワークの恩恵をフル活用'],
+              cons: ['リリースまで半年以上機能開発が凍結', '初回切り替え時の未知バグリスクが極大'],
+              scores: { c_speed: 2, c_safety: 3, c_elegance: 10, c_cost: 3 },
+            },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: 'preset_startup_runway',
+    name: 'スタートアップ資金調達・バーンレート予測',
+    tagline: '月次バーンレート/残存ランウェイ試算 × 投資家ファンネル × 資本政策ノート',
+    prompt: 'スタートアップ資金調達とランウェイ生存予測',
+    icon: 'Compass',
+    widgets: [
+      {
+        id: 'p_rw_sim',
+        title: 'バーンレート & ランウェイ (生存可能月数) 試算',
+        type: 'simulation',
+        category: 'Capital & Runway',
+        description: '現預金残高、月次支出、売上成長率からランウェイ月数と次回調達デッドラインを算出',
+        iconName: 'Sliders',
+        accentColor: 'amber',
+        size: 'wide',
+        createdAt: 1,
+        outputKey: 'runway_months',
+        data: {
+          variables: [
+            { id: 'cash', name: 'cash', label: '現在の手元預金残高', value: 45000000, min: 5000000, max: 200000000, step: 5000000, unit: '円' },
+            { id: 'burn', name: 'burn', label: '月間総支出 (OPEX+人件費)', value: 3800000, min: 1000000, max: 20000000, step: 200000, unit: '円' },
+            { id: 'mrr_in', name: 'mrr_in', label: '月次売上入金 (MRR)', value: 1200000, min: 0, max: 15000000, step: 100000, unit: '円' },
+          ],
+          formulas: [
+            { id: 'net_burn', label: '実質月次キャッシュアウト (Net Burn)', unit: '円', calculate: 'burn - mrr_in' },
+            { id: 'runway_months', label: '残存ランウェイ (生存可能月数)', unit: 'ヶ月', calculate: 'cash / (burn - mrr_in)' },
+          ],
+        },
+      },
+      {
+        id: 'p_rw_pipe',
+        title: '資金調達ファンネル (Series A Gate)',
+        type: 'pipeline',
+        category: 'Fundraising Pipeline',
+        description: 'ピッチデック準備からタームシート締結、着金までのフェーズ管理',
+        iconName: 'GitBranch',
+        accentColor: 'indigo',
+        size: 'wide',
+        createdAt: 2,
+        data: {
+          stages: [
+            {
+              id: 'fr_1',
+              title: '1. 準備 & ロングリスト (15社)',
+              items: [
+                { id: 'fr_i1', text: 'データルームおよび財務トラクションモデル完成', done: true, priority: 'high' },
+                { id: 'fr_i2', text: 'エンジェル投資家からの温かい紹介(Warm Intro)獲得', done: true, priority: 'high' },
+              ],
+            },
+            {
+              id: 'fr_2',
+              title: '2. パートナーミーティング',
+              items: [
+                { id: 'fr_i3', text: 'トップティアVC 3社での本ミーティング登壇', done: false, priority: 'high' },
+                { id: 'fr_i4', text: '既存顧客5社へのリファレンスコール実施', done: false, priority: 'med' },
+              ],
+            },
+            {
+              id: 'fr_3',
+              title: '3. タームシート & クロージング',
+              items: [
+                { id: 'fr_i5', text: 'リード投資家とのバリュエーション合意 & 締結', done: false, priority: 'high' },
+                { id: 'fr_i6', text: '法務デューデリジェンス通過と登記・着金完了', done: false, priority: 'high' },
+              ],
+            },
+          ],
         },
       },
     ],
