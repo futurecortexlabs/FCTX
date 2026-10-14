@@ -25,6 +25,13 @@ interface Props {
   onApplyPreset: (preset: ThoughtPreset) => void;
   isSynthesizing: boolean;
   activeReasoning?: string;
+  onOpenPresentationDeck?: () => void;
+  onOpenScenarioComparator?: () => void;
+  onOpenTopology?: () => void;
+  onAutoWire?: () => void;
+  onToggleViewMode?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export const CortexCommand: React.FC<Props> = ({
@@ -32,9 +39,32 @@ export const CortexCommand: React.FC<Props> = ({
   onApplyPreset,
   isSynthesizing,
   activeReasoning,
+  onOpenPresentationDeck,
+  onOpenScenarioComparator,
+  onOpenTopology,
+  onAutoWire,
+  onToggleViewMode,
+  onUndo,
+  onRedo,
 }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
+
+  const speakFeedback = (text: string) => {
+    setVoiceFeedback(text);
+    setTimeout(() => setVoiceFeedback(null), 4000);
+    try {
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ja-JP';
+        utter.rate = 1.1;
+        window.speechSynthesis.speak(utter);
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   const toggleListening = () => {
     const SpeechRecognition =
@@ -62,12 +92,50 @@ export const CortexCommand: React.FC<Props> = ({
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        if (transcript) {
-          setInput(transcript);
+        const transcript = (event.results[0][0].transcript || '').trim();
+        if (!transcript) {
+          setIsListening(false);
+          return;
+        }
+
+        setInput(transcript);
+        const lower = transcript.toLowerCase();
+
+        // Voice Command Action Intent Dispatcher
+        if ((lower.includes('プレゼン') || lower.includes('スライド')) && onOpenPresentationDeck) {
           soundEngine.playMorph();
+          speakFeedback('プレゼンテーションモードを起動しました');
+          onOpenPresentationDeck();
+        } else if ((lower.includes('比較') || lower.includes('マルチバース') || lower.includes('並行')) && onOpenScenarioComparator) {
+          soundEngine.playMorph();
+          speakFeedback('多元並行世界シナリオ比較を起動しました');
+          onOpenScenarioComparator();
+        } else if ((lower.includes('相関') || lower.includes('トポロジー') || lower.includes('マップ')) && onOpenTopology) {
+          soundEngine.playMorph();
+          speakFeedback('思考相関トポロジーマップを展開しました');
+          onOpenTopology();
+        } else if ((lower.includes('自動配線') || lower.includes('自動結線') || lower.includes('配線') || lower.includes('結線')) && onAutoWire) {
+          soundEngine.playMorph();
+          speakFeedback('全モジュール間のシナプスを自動結線しました');
+          onAutoWire();
+        } else if ((lower.includes('キャンバス') || lower.includes('グリッド') || lower.includes('切り替え')) && onToggleViewMode) {
+          soundEngine.playClick();
+          speakFeedback('表示レイアウトを切り替えました');
+          onToggleViewMode();
+        } else if ((lower.includes('元に戻') || lower.includes('アンドゥ') || lower.includes('取り消')) && onUndo) {
+          soundEngine.playUndo();
+          speakFeedback('直前の変更を元に戻しました');
+          onUndo();
+        } else if ((lower.includes('やり直') || lower.includes('リドゥ')) && onRedo) {
+          soundEngine.playRedo();
+          speakFeedback('取り消した変更をやり直しました');
+          onRedo();
+        } else {
+          soundEngine.playMorph();
+          speakFeedback('思考プロンプトからワークスペースを変形中...');
           onMorph(transcript);
         }
+
         setIsListening(false);
       };
 
@@ -121,6 +189,15 @@ export const CortexCommand: React.FC<Props> = ({
 
   return (
     <div className="w-full space-y-3">
+      {/* Voice Agent Feedback Banner */}
+      {voiceFeedback && (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-cyan-950/80 to-indigo-950/80 border border-cyan-500/60 rounded-xl text-xs font-mono text-cyan-200 shadow-lg shadow-cyan-950/40 animate-in fade-in slide-in-from-top-1 duration-200">
+          <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />
+          <span className="font-bold text-cyan-300">CORTEX VOICE AGENT:</span>
+          <span>{voiceFeedback}</span>
+        </div>
+      )}
+
       {/* Prompter Form */}
       <form onSubmit={handleSubmit} className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition duration-500 pointer-events-none" />

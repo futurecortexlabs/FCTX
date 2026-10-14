@@ -9,6 +9,7 @@ import {
   HelpCircle,
   History,
   LayoutGrid,
+  Network,
   Orbit,
   Presentation,
   RefreshCw,
@@ -28,6 +29,7 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
   onOpenScenarioComparator?: () => void;
+  onOpenTopology?: () => void;
   onOpenCopilot?: () => void;
   onOpenShortcutsHelp?: () => void;
   onResetWorkspace: () => void;
@@ -46,6 +48,7 @@ export const Header: React.FC<Props> = ({
   onOpenHistory,
   onOpenPresentationDeck,
   onOpenScenarioComparator,
+  onOpenTopology,
   onOpenCopilot,
   onOpenShortcutsHelp,
   onResetWorkspace,
@@ -183,6 +186,21 @@ export const Header: React.FC<Props> = ({
             >
               <GitCompare className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
               <span className="hidden sm:inline">並行比較</span>
+            </button>
+          )}
+
+          {/* Cognitive Topology Neural Network Map */}
+          {onOpenTopology && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onOpenTopology();
+              }}
+              className="flex items-center gap-1.5 text-xs bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-700/60 text-indigo-200 hover:text-white px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+              title="思考相関トポロジー・マップ (因果ネットワーク & 神経結線グラフ)"
+            >
+              <Network className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              <span className="hidden sm:inline">相関マップ</span>
             </button>
           )}
 

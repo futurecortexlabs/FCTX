@@ -29,6 +29,7 @@ import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { CortexCopilotDrawer } from './components/CortexCopilotDrawer';
 import { ShortcutsHelpModal } from './components/modals/ShortcutsHelpModal';
 import { ScenarioComparatorModal } from './components/modals/ScenarioComparatorModal';
+import { CognitiveTopologyModal } from './components/modals/CognitiveTopologyModal';
 import { WorkspaceTimeMachine } from './components/WorkspaceTimeMachine';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
@@ -90,6 +91,7 @@ export const App: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
   const [isScenarioComparatorOpen, setIsScenarioComparatorOpen] = useState(false);
+  const [isTopologyOpen, setIsTopologyOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -173,6 +175,8 @@ export const App: React.FC = () => {
           setIsPresentationDeckOpen(false);
         } else if (isScenarioComparatorOpen) {
           setIsScenarioComparatorOpen(false);
+        } else if (isTopologyOpen) {
+          setIsTopologyOpen(false);
         } else if (isCopilotOpen) {
           setIsCopilotOpen(false);
         } else if (isShortcutsHelpOpen) {
@@ -192,6 +196,10 @@ export const App: React.FC = () => {
           e.preventDefault();
           soundEngine.playMorph();
           setIsScenarioComparatorOpen((prev) => !prev);
+        } else if (e.key === 't' || e.key === 'T') {
+          e.preventDefault();
+          soundEngine.playMorph();
+          setIsTopologyOpen((prev) => !prev);
         } else if (e.key === 'w' || e.key === 'W') {
           e.preventDefault();
           soundEngine.playMorph();
@@ -210,6 +218,7 @@ export const App: React.FC = () => {
     zenWidget,
     isPresentationDeckOpen,
     isScenarioComparatorOpen,
+    isTopologyOpen,
     isCommandPaletteOpen,
     isWiringMode,
     isCopilotOpen,
@@ -479,6 +488,7 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+        onOpenTopology={() => setIsTopologyOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
         onResetWorkspace={handleResetWorkspace}
@@ -499,6 +509,13 @@ export const App: React.FC = () => {
           onApplyPreset={handleApplyPreset}
           isSynthesizing={isSynthesizing}
           activeReasoning={activeReasoning}
+          onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
+          onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+          onOpenTopology={() => setIsTopologyOpen(true)}
+          onAutoWire={handleAutoWireSynapses}
+          onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
         />
 
         {/* Synapse State Bus Data Conduit */}
@@ -709,6 +726,7 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+        onOpenTopology={() => setIsTopologyOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
@@ -743,6 +761,21 @@ export const App: React.FC = () => {
           pushUndoSnapshot(widgets, synapses);
           setWidgets(appliedWidgets);
           setActiveReasoning(`並行世界比較から「${label}」をワークスペースに適用しました。`);
+        }}
+      />
+
+      {/* Cognitive Topology Neural Network Map Modal */}
+      <CognitiveTopologyModal
+        isOpen={isTopologyOpen}
+        onClose={() => setIsTopologyOpen(false)}
+        widgets={widgets}
+        synapses={synapses}
+        busState={busState}
+        onSelectWidget={(wId) => {
+          const target = widgets.find((w) => w.id === wId);
+          if (target) {
+            setZenWidget(target);
+          }
         }}
       />
 

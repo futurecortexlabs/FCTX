@@ -9,6 +9,7 @@ import {
   History,
   Keyboard,
   LayoutGrid,
+  Network,
   Orbit,
   Plus,
   Presentation,
@@ -33,6 +34,7 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
   onOpenScenarioComparator?: () => void;
+  onOpenTopology?: () => void;
   onOpenSettings: () => void;
   onOpenCopilot?: () => void;
   onOpenShortcutsHelp?: () => void;
@@ -53,6 +55,7 @@ export const CommandPalette: React.FC<Props> = ({
   onOpenHistory,
   onOpenPresentationDeck,
   onOpenScenarioComparator,
+  onOpenTopology,
   onOpenSettings,
   onOpenCopilot,
   onOpenShortcutsHelp,
@@ -113,6 +116,17 @@ export const CommandPalette: React.FC<Props> = ({
             category: '意思決定・分析',
             icon: <GitCompare className="w-4 h-4 text-cyan-400" />,
             run: () => onOpenScenarioComparator(),
+          },
+        ]
+      : []),
+    ...(onOpenTopology
+      ? [
+          {
+            id: 'cognitive_topology',
+            title: '思考相関トポロジー・マップ (因果ネットワーク & 神経結線グラフ)',
+            category: '思考トポロジー',
+            icon: <Network className="w-4 h-4 text-indigo-400" />,
+            run: () => onOpenTopology(),
           },
         ]
       : []),
