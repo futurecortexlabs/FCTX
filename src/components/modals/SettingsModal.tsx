@@ -35,8 +35,8 @@ export const SettingsModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
@@ -48,13 +48,13 @@ export const SettingsModal: React.FC<Props> = ({
           <Sparkles className="w-4 h-4 text-indigo-400" />
           FCTX 環境設定
         </h3>
-        <p className="text-xs text-slate-400 mb-6">
+        <p className="text-xs text-slate-400 mb-5">
           思考共生エンジンとアンビエント音響のパーソナライズ
         </p>
 
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           {/* Gemini API Key */}
-          <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
+          <div className="bg-slate-950/60 p-3.5 sm:p-4 rounded-xl border border-slate-800/80">
             <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5 mb-1.5">
               <Key className="w-3.5 h-3.5 text-amber-400" />
               Google Gemini API キー (任意)
@@ -67,7 +67,7 @@ export const SettingsModal: React.FC<Props> = ({
               value={apiKey}
               onChange={(e) => setKey(e.target.value)}
               placeholder="AIzaSy..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono"
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-base sm:text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono"
             />
           </div>
 

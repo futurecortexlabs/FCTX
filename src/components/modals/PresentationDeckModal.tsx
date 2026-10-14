@@ -51,6 +51,28 @@ export const PresentationDeckModal: React.FC<Props> = ({
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
 
+  // Touch swipe tracking for mobile
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    if (deltaX < -50) {
+      // Swiped left -> next
+      soundEngine.playClick();
+      setCurrentIndex((prev) => (prev + 1) % (widgets.length || 1));
+    } else if (deltaX > 50) {
+      // Swiped right -> prev
+      soundEngine.playClick();
+      setCurrentIndex((prev) => (prev - 1 + widgets.length) % (widgets.length || 1));
+    }
+    setTouchStartX(null);
+  };
+
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(0);
@@ -301,7 +323,11 @@ export const PresentationDeckModal: React.FC<Props> = ({
       </div>
 
       {/* Main Slide Interactive Stage */}
-      <div className="max-w-6xl w-full mx-auto flex-1 py-4 flex flex-col justify-center overflow-y-auto">
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="max-w-6xl w-full mx-auto flex-1 py-4 flex flex-col justify-center overflow-y-auto"
+      >
         <div className="w-full max-w-4xl mx-auto shadow-2xl">
           <WidgetContainer
             widget={{ ...currentWidget, size: 'wide', isCollapsed: false }}

@@ -217,15 +217,15 @@ export const CortexCommand: React.FC<Props> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="思考の断片や目的を入力してください... (例: 「新規SaaSの価格弾力性と獲得チャネル」「サイバーインシデント対策」)"
-            className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
+            placeholder="思考や目的を入力... (例: 「新規SaaSの価格弾力性」「インシデント対策」)"
+            className="flex-1 bg-transparent px-2.5 sm:px-3 py-2 text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none min-w-0"
           />
 
           {/* Voice Input Button */}
           <button
             type="button"
             onClick={toggleListening}
-            className={`p-2 rounded-lg transition-colors mr-1 ${
+            className={`p-2 rounded-lg transition-colors mr-1 flex-shrink-0 ${
               isListening
                 ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/50'
                 : 'text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60'
@@ -238,17 +238,17 @@ export const CortexCommand: React.FC<Props> = ({
           <button
             type="submit"
             disabled={!input.trim() || isSynthesizing}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow-lg shadow-indigo-950/40 transition-all font-mono"
+            className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 text-white font-medium text-xs px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg shadow-lg shadow-indigo-950/40 transition-all font-mono flex-shrink-0"
           >
             {isSynthesizing ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>自己変形中...</span>
+                <span className="hidden sm:inline">自己変形中...</span>
               </>
             ) : (
               <>
                 <Wand2 className="w-3.5 h-3.5" />
-                <span>変形 (Morph)</span>
+                <span>変形</span>
               </>
             )}
           </button>
@@ -256,16 +256,16 @@ export const CortexCommand: React.FC<Props> = ({
       </form>
 
       {/* Preset Inspirations */}
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mr-1">
+      <div className="flex items-center gap-2 pt-1 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 sm:flex-wrap">
+        <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mr-1 flex-shrink-0">
           <Lightbulb className="w-3 h-3 text-amber-400" />
-          即時プリセット:
+          <span className="hidden xs:inline">即時プリセット:</span>
         </span>
         {SHOWCASE_PRESETS.map((preset) => (
           <button
             key={preset.id}
             onClick={() => handlePresetClick(preset)}
-            className="flex items-center gap-1.5 text-xs bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all"
+            className="flex items-center gap-1.5 text-xs bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg transition-all whitespace-nowrap flex-shrink-0 sm:flex-shrink"
           >
             {getPresetIcon(preset.icon)}
             <span>{preset.name}</span>

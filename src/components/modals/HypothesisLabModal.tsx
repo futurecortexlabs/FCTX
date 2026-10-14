@@ -448,49 +448,49 @@ export const HypothesisLabModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl max-h-[92vh] flex flex-col bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-6xl max-h-[94vh] flex flex-col bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
         {/* Modal Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 border border-amber-500/40 text-amber-400">
-              <Flame className="w-5 h-5 animate-pulse" />
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-gradient-to-br from-amber-500/20 to-rose-500/20 border border-amber-500/40 text-amber-400 flex-shrink-0">
+              <Flame className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-100">
-                  HYPOTHESIS STRESS LAB // 仮説ストレステスト・実験ラボ
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base font-bold text-slate-100 truncate">
+                  HYPOTHESIS LAB <span className="hidden sm:inline">// 仮説ストレステスト</span>
                 </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-semibold">
-                  {parameters.length} パラメータ検知
+                <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-semibold">
+                  {parameters.length} 項目
                 </span>
                 {synapses.length > 0 && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-semibold">
-                    {synapses.length} シナプス連動中
+                  <span className="text-[9px] sm:text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-semibold hidden xs:inline-block">
+                    {synapses.length} シナプス
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] text-slate-400 truncate hidden sm:block">
                 極限ショックや市場急変を注入し、システムの堅牢度スコア・脆弱性ボトルネック・破綻ラインを診断
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <button
               onClick={handleCopyReport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-800 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-850 border border-slate-800 transition-colors"
               title="Markdownレポートをクリップボードにコピー"
             >
               {copiedReport ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-bold">コピー完了</span>
+                  <span className="text-emerald-400 font-bold hidden sm:inline">コピー完了</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5 text-slate-400" />
-                  <span>レポートをコピー</span>
+                  <span className="hidden sm:inline">レポート</span>
                 </>
               )}
             </button>
@@ -506,7 +506,7 @@ export const HypothesisLabModal: React.FC<Props> = ({
         {/* Modal Body: Left Controls vs Right Diagnostics */}
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-850">
           {/* Left Column: Preset Shocks & Parameter Sliders (7 cols) */}
-          <div className="lg:col-span-7 p-6 space-y-6">
+          <div className="lg:col-span-7 p-4 sm:p-6 space-y-5 sm:space-y-6">
             {/* Macro Shock Scenarios */}
             <div>
               <div className="flex items-center justify-between mb-2.5">
@@ -817,8 +817,8 @@ export const HypothesisLabModal: React.FC<Props> = ({
         </div>
 
         {/* Modal Bottom Actions Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800 bg-slate-900/80 backdrop-blur-md">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-800 bg-slate-900/80 backdrop-blur-md">
+          <div className="flex items-center justify-center sm:justify-start gap-2">
             <button
               onClick={handleResetAll}
               className="px-3 py-1.5 text-xs font-mono text-slate-400 hover:text-slate-200 transition-colors"
@@ -827,20 +827,20 @@ export const HypothesisLabModal: React.FC<Props> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-mono text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-mono text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors text-center"
             >
               閉じる
             </button>
 
             <button
               onClick={handleApplyToCanvas}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-450 hover:to-rose-450 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-450 hover:to-rose-450 text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-95 text-center"
             >
-              <Zap className="w-4 h-4 text-slate-950 fill-current" />
-              <span>ショック状態をキャンバスに一時注入して観察</span>
+              <Zap className="w-4 h-4 text-slate-950 fill-current shrink-0" />
+              <span className="truncate sm:overflow-visible">ショック状態をキャンバスに注入</span>
             </button>
           </div>
         </div>

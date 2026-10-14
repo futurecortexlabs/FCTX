@@ -38,7 +38,7 @@ export const CortexWhisperBar: React.FC<Props> = ({ whispers, onApplyAction }) =
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 max-w-sm sm:max-w-md w-full px-3 sm:px-0">
+    <div className="fixed bottom-20 md:bottom-5 right-3 md:right-5 z-30 md:z-40 max-w-sm sm:max-w-md w-full px-2 sm:px-0 pointer-events-none">
       {/* Floating Trigger Pill */}
       {!isOpen && (
         <button
@@ -46,7 +46,7 @@ export const CortexWhisperBar: React.FC<Props> = ({ whispers, onApplyAction }) =
             soundEngine.playClick();
             setIsOpen(true);
           }}
-          className="ml-auto flex items-center gap-2.5 bg-slate-900/90 hover:bg-slate-850 border border-slate-700/80 px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-xl transition-all duration-300 hover:scale-105 group"
+          className="ml-auto pointer-events-auto flex items-center gap-2.5 bg-slate-900/90 hover:bg-slate-850 border border-slate-700/80 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-2xl backdrop-blur-xl transition-all duration-300 hover:scale-105 group"
         >
           <div className="relative">
             <Bot className="w-4 h-4 text-indigo-400 group-hover:text-cyan-400 transition-colors" />
@@ -66,7 +66,7 @@ export const CortexWhisperBar: React.FC<Props> = ({ whispers, onApplyAction }) =
 
       {/* Expanded Whispers Popover Drawer */}
       {isOpen && (
-        <div className="bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in slide-in-from-bottom duration-200">
+        <div className="pointer-events-auto bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in slide-in-from-bottom duration-200">
           {/* Header */}
           <div className="p-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">

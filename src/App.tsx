@@ -32,6 +32,7 @@ import { ScenarioComparatorModal } from './components/modals/ScenarioComparatorM
 import { HypothesisLabModal } from './components/modals/HypothesisLabModal';
 import { CognitiveTopologyModal } from './components/modals/CognitiveTopologyModal';
 import { WorkspaceTimeMachine } from './components/WorkspaceTimeMachine';
+import { MobileBottomDock } from './components/MobileBottomDock';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
 import { AlertTriangle, Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
     label: string;
     originalWidgets: MorphicWidget[];
   } | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -548,10 +550,12 @@ export const App: React.FC = () => {
         }}
         viewMode={viewMode}
         onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
       />
 
       {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6 relative">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-28 md:pb-6 space-y-6 relative">
         {/* Prompter Command Bar */}
         <CortexCommand
           onMorph={handleMorph}
@@ -746,7 +750,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer Info */}
-      <footer className="border-t border-slate-800/60 py-4 px-6 text-center text-xs text-slate-400 font-mono flex items-center justify-between max-w-7xl mx-auto w-full">
+      <footer className="border-t border-slate-800/60 py-4 px-4 sm:px-6 text-center text-xs text-slate-400 font-mono flex items-center justify-between max-w-7xl mx-auto w-full pb-24 md:pb-4">
         <span>FCTX // Future Cortex Labs — Morphic Ambient Workspace © 2026</span>
         <button
           onClick={() => setIsCommandPaletteOpen(true)}
@@ -938,6 +942,23 @@ export const App: React.FC = () => {
           history={history}
           onRestoreHistory={handleRestoreHistory}
           onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+        />
+      )}
+
+      {/* Mobile Bottom Navigation Dock */}
+      {!zenWidget && !isPresentationDeckOpen && (
+        <MobileBottomDock
+          viewMode={viewMode}
+          onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
+          onOpenHypothesisLab={() => setIsHypothesisLabOpen(true)}
+          onOpenCopilot={() => setIsCopilotOpen(true)}
+          onToggleMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+          onFocusCommandBar={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const inputEl = document.querySelector('input[type="text"]') as HTMLInputElement;
+            if (inputEl) inputEl.focus();
+          }}
+          isMenuOpen={isMobileMenuOpen}
         />
       )}
     </div>

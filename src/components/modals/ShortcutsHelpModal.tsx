@@ -25,8 +25,8 @@ export const ShortcutsHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
         <button
           onClick={() => {
             soundEngine.playClick();
@@ -45,14 +45,14 @@ export const ShortcutsHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
           FCTXを思考スピードで操作するためのホットキー一覧
         </p>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           {shortcuts.map((sc) => (
             <div
               key={sc.key}
-              className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs"
+              className="flex items-center justify-between gap-2 p-2 sm:p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs"
             >
-              <span className="text-slate-300">{sc.desc}</span>
-              <kbd className="font-mono text-[11px] font-bold text-cyan-300 bg-slate-900 px-2 py-1 rounded-lg border border-cyan-900/60 shadow-sm">
+              <span className="text-slate-300 text-[11px] sm:text-xs truncate">{sc.desc}</span>
+              <kbd className="font-mono text-[10px] sm:text-[11px] font-bold text-cyan-300 bg-slate-900 px-2 py-0.5 sm:py-1 rounded-lg border border-cyan-900/60 shadow-sm shrink-0 whitespace-nowrap">
                 {sc.key}
               </kbd>
             </div>

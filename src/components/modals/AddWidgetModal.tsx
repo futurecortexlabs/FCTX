@@ -232,8 +232,8 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
@@ -250,7 +250,7 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
         </p>
 
         {/* Template Selector Grid */}
-        <div className="space-y-3 mb-5 max-h-72 overflow-y-auto pr-1">
+        <div className="space-y-3 mb-5 max-h-60 sm:max-h-72 overflow-y-auto pr-1">
           {templates.map((tpl) => (
             <div
               key={tpl.type}
@@ -278,7 +278,7 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
         </div>
 
         {/* Title & Category Input */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <div>
             <label className="text-[11px] text-slate-400 font-medium block mb-1">モジュール名</label>
             <input
@@ -286,7 +286,7 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="例: 価格シミュレーター"
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-base sm:text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div>
@@ -296,7 +296,7 @@ export const AddWidgetModal: React.FC<Props> = ({ isOpen, onClose, onAddWidget }
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="例: Finance"
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-base sm:text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
             />
           </div>
         </div>

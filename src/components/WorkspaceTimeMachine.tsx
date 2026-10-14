@@ -40,10 +40,10 @@ export const WorkspaceTimeMachine: React.FC<Props> = ({
   const activeHistoryItem = history[sliderIndex] || history[0];
 
   return (
-    <div className="fixed bottom-5 left-5 z-40 flex flex-col items-start gap-2 select-none">
+    <div className="fixed bottom-20 md:bottom-5 left-3 md:left-5 z-30 md:z-40 flex flex-col items-start gap-2 select-none">
       {/* Expanded Time Scrubber Drawer */}
       {isExpanded && history.length > 0 && (
-        <div className="bg-slate-900/95 border border-indigo-500/60 rounded-2xl p-4 shadow-2xl backdrop-blur-xl w-80 sm:w-96 animate-in slide-in-from-bottom duration-200 space-y-3">
+        <div className="bg-slate-900/95 border border-indigo-500/60 rounded-2xl p-4 shadow-2xl backdrop-blur-xl w-[calc(100vw-24px)] sm:w-96 animate-in slide-in-from-bottom duration-200 space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-cyan-400" />

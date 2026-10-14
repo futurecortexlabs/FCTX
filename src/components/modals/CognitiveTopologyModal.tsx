@@ -423,6 +423,42 @@ export const CognitiveTopologyModal: React.FC<Props> = ({
     draggedNodeRef.current = null;
   };
 
+  // Touch Interaction Handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+
+    const hit = nodesRef.current.find((n) => {
+      const dx = n.x - x;
+      const dy = n.y - y;
+      return Math.sqrt(dx * dx + dy * dy) <= n.radius + 14;
+    });
+
+    if (hit) {
+      soundEngine.playClick();
+      setSelectedNode(hit);
+      draggedNodeRef.current = hit;
+    } else {
+      setSelectedNode(null);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!draggedNodeRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas || e.touches.length === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    draggedNodeRef.current.x = e.touches[0].clientX - rect.left;
+    draggedNodeRef.current.y = e.touches[0].clientY - rect.top;
+  };
+
+  const handleTouchEnd = () => {
+    draggedNodeRef.current = null;
+  };
+
   // Trigger Pulse Ripple
   const handlePulse = () => {
     soundEngine.playSynapsePulse();
@@ -434,24 +470,24 @@ export const CognitiveTopologyModal: React.FC<Props> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/70">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border border-cyan-800/60 text-cyan-400">
-              <Network className="w-5 h-5 animate-pulse" />
+        <div className="p-3 sm:p-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/70">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border border-cyan-800/60 text-cyan-400 shrink-0">
+              <Network className="w-4 h-4 sm:w-5 h-5 animate-pulse" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-extrabold text-base sm:text-lg text-slate-100 font-mono tracking-wide">
-                  COGNITIVE TOPOLOGY // 思考相関トポロジー・マップ
+                <h2 className="font-extrabold text-sm sm:text-lg text-slate-100 font-mono tracking-wide truncate">
+                  COGNITIVE TOPOLOGY // 思考相関マップ
                 </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60">
+                <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60 shrink-0">
                   因果グラフ & 神経結線
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
                 モジュール群とシナプス・データバスを直結する全体構造の動的因果ネットワーク
               </p>
             </div>
@@ -517,18 +553,21 @@ export const CognitiveTopologyModal: React.FC<Props> = ({
         </div>
 
         {/* Interactive Physics Canvas Area */}
-        <div className="relative flex-1 min-h-[440px] bg-[#05070d] overflow-hidden select-none">
+        <div className="relative flex-1 min-h-[360px] sm:min-h-[440px] bg-[#05070d] overflow-hidden select-none">
           <canvas
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            className="w-full h-full block cursor-grab active:cursor-grabbing"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="w-full h-full block cursor-grab active:cursor-grabbing touch-none"
           />
 
           {/* Node Inspector Overlay Card (When a node is selected) */}
           {selectedNode && (
-            <div className="absolute bottom-4 left-4 max-w-sm bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl backdrop-blur-xl space-y-2 animate-in fade-in duration-150">
+            <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:left-4 sm:bottom-4 sm:max-w-sm bg-slate-900/90 border border-slate-700/80 rounded-2xl p-3.5 shadow-2xl backdrop-blur-xl space-y-2 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold text-cyan-400 flex items-center gap-1.5 uppercase">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: selectedNode.color }} />

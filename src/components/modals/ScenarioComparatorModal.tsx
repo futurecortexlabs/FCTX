@@ -290,25 +290,25 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border border-cyan-800/60 text-cyan-400">
-              <GitCompare className="w-5 h-5 animate-pulse" />
+        <div className="p-3 sm:p-5 border-b border-slate-800/80 flex items-center justify-between bg-slate-950/60">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-950 to-indigo-950 border border-cyan-800/60 text-cyan-400 shrink-0">
+              <GitCompare className="w-4 h-4 sm:w-5 h-5 animate-pulse" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="font-extrabold text-base sm:text-lg text-slate-100 font-mono tracking-wide">
-                  MULTIVERSE // 並行世界シナリオ比較エンジン
+                <h2 className="font-extrabold text-sm sm:text-lg text-slate-100 font-mono tracking-wide truncate">
+                  MULTIVERSE // 並行世界シナリオ比較
                 </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 shrink-0">
                   並行差分分析
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
-                異なるタイムライン、スナップショット、またはプリセット間のKPI・数値を多次元比較
+              <p className="text-[11px] sm:text-xs text-slate-400 truncate">
+                異なるタイムラインやプリセット間のKPI・数値を多次元比較
               </p>
             </div>
           </div>
@@ -318,7 +318,7 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
               soundEngine.playClick();
               onClose();
             }}
-            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-100 transition-colors"
+            className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-100 transition-colors shrink-0 ml-2"
           >
             <X className="w-5 h-5" />
           </button>
@@ -696,15 +696,15 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <div className="p-3 sm:p-4 border-t border-slate-800/80 bg-slate-950/80 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 justify-center sm:justify-start">
             <button
               type="button"
               onClick={handleCopyMemo}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl transition-all font-mono"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl transition-all font-mono"
             >
               {copiedMemo ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedMemo ? 'コピー完了！' : '比較メモをMarkdownコピー'}</span>
+              <span>{copiedMemo ? 'コピー完了！' : 'Markdownコピー'}</span>
             </button>
 
             <button
@@ -713,14 +713,14 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
                 soundEngine.playClick();
                 window.print();
               }}
-              className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl transition-all font-mono"
+              className="flex items-center justify-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-xl transition-all font-mono"
             >
               <Printer className="w-3.5 h-3.5 text-slate-400" />
-              <span>印刷 / PDF</span>
+              <span className="hidden sm:inline">印刷 / PDF</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -728,9 +728,9 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
                 onApplyScenario(worldA.widgets, worldA.name);
                 onClose();
               }}
-              className="flex items-center gap-1.5 text-xs bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 px-3 py-2 rounded-xl transition-all font-semibold"
+              className="flex items-center justify-center gap-1.5 text-xs bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 px-3 py-2 rounded-xl transition-all font-semibold truncate"
             >
-              <span>← 世界 A を採用・展開</span>
+              <span className="truncate">← 世界 A 採用</span>
             </button>
 
             <button
@@ -740,9 +740,9 @@ export const ScenarioComparatorModal: React.FC<Props> = ({
                 onApplyScenario(worldB.widgets, worldB.name);
                 onClose();
               }}
-              className="flex items-center gap-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-cyan-600/30 transition-all transform active:scale-98"
+              className="flex items-center justify-center gap-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3.5 py-2 rounded-xl shadow-lg shadow-cyan-600/30 transition-all transform active:scale-98 truncate"
             >
-              <span>世界 B を採用・展開 →</span>
+              <span className="truncate">世界 B 採用 →</span>
             </button>
           </div>
         </div>

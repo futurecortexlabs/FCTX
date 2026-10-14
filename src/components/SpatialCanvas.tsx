@@ -141,6 +141,84 @@ export const SpatialCanvas: React.FC<Props> = ({
     };
   };
 
+  // Touch handlers for mobile
+  const touchStartDistRef = useRef<number | null>(null);
+  const touchStartZoomRef = useRef<number>(zoom);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      if (e.target === containerRef.current || (e.target as HTMLElement).id === 'spatial-bg') {
+        setIsPanning(true);
+        startPanRef.current = { x: touch.clientX - pan.x, y: touch.clientY - pan.y };
+      }
+    } else if (e.touches.length === 2) {
+      // Pinch to zoom start
+      setIsPanning(false);
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      touchStartDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      touchStartZoomRef.current = zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isPanning) {
+      const touch = e.touches[0];
+      setPan({
+        x: touch.clientX - startPanRef.current.x,
+        y: touch.clientY - startPanRef.current.y,
+      });
+    } else if (e.touches.length === 1 && draggingWidgetId && startWidgetDragRef.current) {
+      const touch = e.touches[0];
+      const { widgetId, startMouseX, startMouseY, startX, startY } = startWidgetDragRef.current;
+      const dx = (touch.clientX - startMouseX) / zoom;
+      const dy = (touch.clientY - startMouseY) / zoom;
+      const target = widgets.find((w) => w.id === widgetId);
+      if (target) {
+        onUpdateWidget({
+          ...target,
+          position: {
+            x: Math.round(startX + dx),
+            y: Math.round(startY + dy),
+          },
+        });
+      }
+    } else if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+      // Pinch to zoom
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const ratio = currentDist / touchStartDistRef.current;
+      const nextZoom = Math.min(1.8, Math.max(0.4, Math.round(touchStartZoomRef.current * ratio * 10) / 10));
+      setZoom(nextZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsPanning(false);
+    touchStartDistRef.current = null;
+    if (draggingWidgetId) {
+      setDraggingWidgetId(null);
+      startWidgetDragRef.current = null;
+    }
+  };
+
+  const handleStartTouchDragWidget = (e: React.TouchEvent, widget: MorphicWidget) => {
+    e.stopPropagation();
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    soundEngine.playClick();
+    setDraggingWidgetId(widget.id);
+    startWidgetDragRef.current = {
+      widgetId: widget.id,
+      startMouseX: touch.clientX,
+      startMouseY: touch.clientY,
+      startX: widget.position?.x ?? 100,
+      startY: widget.position?.y ?? 100,
+    };
+  };
+
   const handleResetView = () => {
     soundEngine.playClick();
     setPan({ x: 0, y: 0 });
@@ -332,12 +410,16 @@ export const SpatialCanvas: React.FC<Props> = ({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      className="relative w-full h-[calc(100vh-180px)] min-h-[600px] overflow-hidden rounded-2xl border border-slate-800 bg-[#06080e] select-none cursor-grab active:cursor-grabbing shadow-2xl"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      className="relative w-full h-[calc(100vh-180px)] min-h-[500px] overflow-hidden rounded-2xl border border-slate-800 bg-[#06080e] select-none cursor-grab active:cursor-grabbing shadow-2xl touch-none"
     >
       {/* Background Neural Matrix Grid Pattern */}
       <div
         id="spatial-bg"
-        className="absolute inset-0 pointer-events-auto"
+        className="absolute inset-0 pointer-events-auto touch-none"
         style={{
           backgroundImage: `radial-gradient(circle, rgba(99, 102, 241, 0.18) 1.2px, transparent 1.2px)`,
           backgroundSize: `${32 * zoom}px ${32 * zoom}px`,
@@ -346,7 +428,7 @@ export const SpatialCanvas: React.FC<Props> = ({
       />
 
       {/* Top-Right Floating Canvas Controls & Layout Toolbar */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-slate-950/90 border border-slate-800/90 p-1.5 rounded-xl shadow-2xl backdrop-blur-md">
+      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-30 flex items-center gap-1 sm:gap-2 bg-slate-950/90 border border-slate-800/90 p-1 sm:p-1.5 rounded-xl shadow-2xl backdrop-blur-md max-w-[calc(100%-16px)] overflow-x-auto no-scrollbar">
         {/* Zoom controls */}
         <div className="flex items-center gap-1">
           <button
@@ -358,7 +440,7 @@ export const SpatialCanvas: React.FC<Props> = ({
           </button>
           <button
             onClick={handleResetView}
-            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 w-12 text-center font-bold px-1 py-0.5 rounded hover:bg-cyan-950/40 transition-colors"
+            className="text-[11px] font-mono text-cyan-400 hover:text-cyan-300 w-11 sm:w-12 text-center font-bold px-1 py-0.5 rounded hover:bg-cyan-950/40 transition-colors"
             title="100%にリセット"
           >
             {Math.round(zoom * 100)}%
@@ -402,7 +484,7 @@ export const SpatialCanvas: React.FC<Props> = ({
             title="2〜3列グリッド整列"
           >
             <LayoutGrid className="w-3.5 h-3.5 text-indigo-400" />
-            <span>グリッド</span>
+            <span className="hidden sm:inline">グリッド</span>
           </button>
 
           <button
@@ -411,7 +493,7 @@ export const SpatialCanvas: React.FC<Props> = ({
             title="因果フロー整列 (入力・前提 → 決定・分析 → 成果・監視)"
           >
             <Workflow className="w-3.5 h-3.5 text-cyan-400" />
-            <span>因果フロー</span>
+            <span className="hidden sm:inline">因果フロー</span>
           </button>
 
           <button
@@ -420,15 +502,15 @@ export const SpatialCanvas: React.FC<Props> = ({
             title="同心円環オービット整列"
           >
             <Orbit className="w-3.5 h-3.5 text-purple-400" />
-            <span>円環</span>
+            <span className="hidden sm:inline">円環</span>
           </button>
         </div>
       </div>
 
       {/* Bottom-Left Coordinate & Mode HUD Pill */}
-      <div className="absolute bottom-4 left-4 z-30 flex items-center gap-2 bg-slate-950/80 border border-slate-800/80 px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-md text-[10px] font-mono text-slate-400">
+      <div className="absolute bottom-20 sm:bottom-4 left-2 sm:left-4 z-30 flex items-center gap-1.5 sm:gap-2 bg-slate-950/80 border border-slate-800/80 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl shadow-lg backdrop-blur-md text-[9px] sm:text-[10px] font-mono text-slate-400">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-450 animate-pulse bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           <span>SPATIAL CANVAS</span>
         </span>
         <span className="text-slate-600">|</span>
@@ -438,7 +520,7 @@ export const SpatialCanvas: React.FC<Props> = ({
         <span className="text-slate-600">|</span>
         <span className="text-indigo-400 font-semibold">{widgets.length} NODES</span>
         <span className="hidden md:inline text-slate-600">|</span>
-        <span className="hidden md:inline text-slate-500">ドラッグで移動 / Ctrl+Wheelでズーム</span>
+        <span className="hidden md:inline text-slate-500">ドラッグで移動 / ピンチでズーム</span>
       </div>
 
       {/* Interactive Minimap Preview with Viewport Camera Frame */}
@@ -538,7 +620,8 @@ export const SpatialCanvas: React.FC<Props> = ({
               {/* Drag handle pill */}
               <div
                 onMouseDown={(e) => handleStartDragWidget(e, w)}
-                className="mb-1.5 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 px-2.5 py-1 rounded-lg w-max cursor-move shadow transition-colors"
+                onTouchStart={(e) => handleStartTouchDragWidget(e, w)}
+                className="mb-1.5 flex items-center gap-1.5 text-[10px] font-mono text-slate-400 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 px-2.5 py-1 rounded-lg w-max cursor-move shadow transition-colors touch-none"
               >
                 <Move className="w-3 h-3 text-indigo-400" />
                 <span>ドラッグして空間配置</span>
