@@ -5,6 +5,7 @@ import {
   Brain,
   Cpu,
   Download,
+  Flame,
   GitCompare,
   HelpCircle,
   History,
@@ -29,6 +30,7 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
   onOpenScenarioComparator?: () => void;
+  onOpenHypothesisLab?: () => void;
   onOpenTopology?: () => void;
   onOpenCopilot?: () => void;
   onOpenShortcutsHelp?: () => void;
@@ -48,6 +50,7 @@ export const Header: React.FC<Props> = ({
   onOpenHistory,
   onOpenPresentationDeck,
   onOpenScenarioComparator,
+  onOpenHypothesisLab,
   onOpenTopology,
   onOpenCopilot,
   onOpenShortcutsHelp,
@@ -186,6 +189,21 @@ export const Header: React.FC<Props> = ({
             >
               <GitCompare className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
               <span className="hidden sm:inline">並行比較</span>
+            </button>
+          )}
+
+          {/* Hypothesis Stress Lab */}
+          {onOpenHypothesisLab && (
+            <button
+              onClick={() => {
+                soundEngine.playMorph();
+                onOpenHypothesisLab();
+              }}
+              className="flex items-center gap-1.5 text-xs bg-amber-950/70 hover:bg-amber-900/80 border border-amber-700/60 text-amber-200 hover:text-white px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+              title="仮説ストレステスト・ラボ (極限ショック注入 & 堅牢度・破綻ライン分析)"
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="hidden sm:inline">仮説ラボ</span>
             </button>
           )}
 

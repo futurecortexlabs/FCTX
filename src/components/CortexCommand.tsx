@@ -27,6 +27,7 @@ interface Props {
   activeReasoning?: string;
   onOpenPresentationDeck?: () => void;
   onOpenScenarioComparator?: () => void;
+  onOpenHypothesisLab?: () => void;
   onOpenTopology?: () => void;
   onAutoWire?: () => void;
   onToggleViewMode?: () => void;
@@ -41,6 +42,7 @@ export const CortexCommand: React.FC<Props> = ({
   activeReasoning,
   onOpenPresentationDeck,
   onOpenScenarioComparator,
+  onOpenHypothesisLab,
   onOpenTopology,
   onAutoWire,
   onToggleViewMode,
@@ -110,6 +112,10 @@ export const CortexCommand: React.FC<Props> = ({
           soundEngine.playMorph();
           speakFeedback('多元並行世界シナリオ比較を起動しました');
           onOpenScenarioComparator();
+        } else if ((lower.includes('仮説') || lower.includes('ストレステスト') || lower.includes('ショック') || lower.includes('脆弱性') || lower.includes('耐久')) && onOpenHypothesisLab) {
+          soundEngine.playMorph();
+          speakFeedback('仮説ストレステスト・ラボを起動しました');
+          onOpenHypothesisLab();
         } else if ((lower.includes('相関') || lower.includes('トポロジー') || lower.includes('マップ')) && onOpenTopology) {
           soundEngine.playMorph();
           speakFeedback('思考相関トポロジーマップを展開しました');

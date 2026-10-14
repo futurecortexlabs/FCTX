@@ -19,6 +19,7 @@ export const ShortcutsHelpModal: React.FC<Props> = ({ isOpen, onClose }) => {
     { key: 'W', desc: 'シナプス配線モードのトグル (モジュール間データ直結)' },
     { key: 'G', desc: 'グリッド表示 と 空間2Dキャンバス の切り替え' },
     { key: 'M', desc: '多元並行世界シナリオ比較 (Multiverse Comparator)' },
+    { key: 'H', desc: '仮説ストレステスト・ラボ (Hypothesis Stress Lab)' },
     { key: 'T', desc: '思考相関トポロジー・マップ (Topology Graph)' },
     { key: '?', desc: 'このショートカットガイドを表示' },
   ];

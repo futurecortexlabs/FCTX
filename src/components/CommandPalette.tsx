@@ -5,6 +5,7 @@ import type { ThoughtPreset, WorkspaceViewMode } from '../types/morphic';
 import {
   Brain,
   Download,
+  Flame,
   GitCompare,
   History,
   Keyboard,
@@ -34,6 +35,7 @@ interface Props {
   onOpenHistory: () => void;
   onOpenPresentationDeck: () => void;
   onOpenScenarioComparator?: () => void;
+  onOpenHypothesisLab?: () => void;
   onOpenTopology?: () => void;
   onOpenSettings: () => void;
   onOpenCopilot?: () => void;
@@ -55,6 +57,7 @@ export const CommandPalette: React.FC<Props> = ({
   onOpenHistory,
   onOpenPresentationDeck,
   onOpenScenarioComparator,
+  onOpenHypothesisLab,
   onOpenTopology,
   onOpenSettings,
   onOpenCopilot,
@@ -112,10 +115,21 @@ export const CommandPalette: React.FC<Props> = ({
       ? [
           {
             id: 'scenario_comparator',
-            title: '多元並行世界シナリオ比較 (Multiverse Comparator)',
+            title: '多元並行世界シナリオ比較 (Multiverse Comparator) [M]',
             category: '意思決定・分析',
             icon: <GitCompare className="w-4 h-4 text-cyan-400" />,
             run: () => onOpenScenarioComparator(),
+          },
+        ]
+      : []),
+    ...(onOpenHypothesisLab
+      ? [
+          {
+            id: 'hypothesis_lab',
+            title: '仮説ストレステスト・ラボ (ショック注入 & 堅牢度・破綻ライン分析) [H]',
+            category: '意思決定・リスク分析',
+            icon: <Flame className="w-4 h-4 text-amber-400" />,
+            run: () => onOpenHypothesisLab(),
           },
         ]
       : []),

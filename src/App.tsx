@@ -29,11 +29,12 @@ import { CortexWhisperBar } from './components/CortexWhisperBar';
 import { CortexCopilotDrawer } from './components/CortexCopilotDrawer';
 import { ShortcutsHelpModal } from './components/modals/ShortcutsHelpModal';
 import { ScenarioComparatorModal } from './components/modals/ScenarioComparatorModal';
+import { HypothesisLabModal } from './components/modals/HypothesisLabModal';
 import { CognitiveTopologyModal } from './components/modals/CognitiveTopologyModal';
 import { WorkspaceTimeMachine } from './components/WorkspaceTimeMachine';
 import { analyzeWorkspaceState } from './lib/whisperEngine';
 import { autoGenerateSynapses, propagateSynapseValues } from './lib/synapseManager';
-import { Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Eye, Layers, Plus, Sparkles, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [settings, setSettingsState] = useState<WorkspaceSettings>(loadSettings());
@@ -91,7 +92,12 @@ export const App: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
   const [isScenarioComparatorOpen, setIsScenarioComparatorOpen] = useState(false);
+  const [isHypothesisLabOpen, setIsHypothesisLabOpen] = useState(false);
   const [isTopologyOpen, setIsTopologyOpen] = useState(false);
+  const [activeStressTest, setActiveStressTest] = useState<{
+    label: string;
+    originalWidgets: MorphicWidget[];
+  } | null>(null);
 
   // Sync settings with SoundEngine
   useEffect(() => {
@@ -175,6 +181,8 @@ export const App: React.FC = () => {
           setIsPresentationDeckOpen(false);
         } else if (isScenarioComparatorOpen) {
           setIsScenarioComparatorOpen(false);
+        } else if (isHypothesisLabOpen) {
+          setIsHypothesisLabOpen(false);
         } else if (isTopologyOpen) {
           setIsTopologyOpen(false);
         } else if (isCopilotOpen) {
@@ -196,6 +204,10 @@ export const App: React.FC = () => {
           e.preventDefault();
           soundEngine.playMorph();
           setIsScenarioComparatorOpen((prev) => !prev);
+        } else if (e.key === 'h' || e.key === 'H') {
+          e.preventDefault();
+          soundEngine.playMorph();
+          setIsHypothesisLabOpen((prev) => !prev);
         } else if (e.key === 't' || e.key === 'T') {
           e.preventDefault();
           soundEngine.playMorph();
@@ -218,6 +230,7 @@ export const App: React.FC = () => {
     zenWidget,
     isPresentationDeckOpen,
     isScenarioComparatorOpen,
+    isHypothesisLabOpen,
     isTopologyOpen,
     isCommandPaletteOpen,
     isWiringMode,
@@ -429,6 +442,41 @@ export const App: React.FC = () => {
     setSynapses((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
 
+  const handleApplyShock = (shockedWidgets: MorphicWidget[], scenarioLabel: string) => {
+    pushUndoSnapshot(widgets, synapses);
+    soundEngine.playMorph();
+    if (!activeStressTest) {
+      setActiveStressTest({
+        label: scenarioLabel,
+        originalWidgets: JSON.parse(JSON.stringify(widgets)),
+      });
+    } else {
+      setActiveStressTest((prev) => (prev ? { ...prev, label: scenarioLabel } : null));
+    }
+    setWidgets(shockedWidgets);
+    setActiveReasoning(
+      `⚡ 仮説ストレステスト「${scenarioLabel}」を適用しました。各シナプスを通じてショック値がリアルタイム伝播しています。`
+    );
+  };
+
+  const handleRevertStressTest = () => {
+    if (!activeStressTest) return;
+    soundEngine.playUndo();
+    setWidgets(activeStressTest.originalWidgets);
+    setActiveReasoning(`仮説ストレステスト「${activeStressTest.label}」を解除し、元のワークスペース状態に復元しました。`);
+    setActiveStressTest(null);
+  };
+
+  const handleCommitStressTest = () => {
+    if (!activeStressTest) return;
+    soundEngine.playMorph();
+    pushUndoSnapshot(activeStressTest.originalWidgets, synapses);
+    setActiveReasoning(
+      `仮説ストレステスト「${activeStressTest.label}」のパラメータ値をワークスペースの現行値として確定・固定しました。`
+    );
+    setActiveStressTest(null);
+  };
+
   const getThemeBackground = () => {
     switch (settings.theme) {
       case 'matrix':
@@ -488,6 +536,7 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+        onOpenHypothesisLab={() => setIsHypothesisLabOpen(true)}
         onOpenTopology={() => setIsTopologyOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
         onOpenShortcutsHelp={() => setIsShortcutsHelpOpen(true)}
@@ -511,6 +560,7 @@ export const App: React.FC = () => {
           activeReasoning={activeReasoning}
           onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
           onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+          onOpenHypothesisLab={() => setIsHypothesisLabOpen(true)}
           onOpenTopology={() => setIsTopologyOpen(true)}
           onAutoWire={handleAutoWireSynapses}
           onToggleViewMode={() => setViewMode((prev) => (prev === 'grid' ? 'canvas' : 'grid'))}
@@ -586,6 +636,45 @@ export const App: React.FC = () => {
               >
                 完了
               </button>
+            </div>
+          )}
+
+          {/* Emergency / Diagnostic Stress Test Live Banner */}
+          {activeStressTest && (
+            <div className="bg-gradient-to-r from-amber-950/95 via-rose-950/90 to-amber-950/95 border border-amber-500/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-100 shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400">
+                  <AlertTriangle className="w-5 h-5 animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-black uppercase text-amber-400 tracking-wider">
+                      [仮説ストレステスト 稼働中]
+                    </span>
+                    <span className="text-xs font-bold text-white bg-amber-900/80 px-2 py-0.5 rounded border border-amber-600/60">
+                      {activeStressTest.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 mt-0.5">
+                    ショック値がシナプス経由で連動モジュールに伝播中。結果を観察後、1クリックで元の状態に復元または確定できます。
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  onClick={handleRevertStressTest}
+                  className="flex-1 sm:flex-initial px-3.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-xs font-mono font-medium transition-colors"
+                >
+                  元の状態に復元
+                </button>
+                <button
+                  onClick={handleCommitStressTest}
+                  className="flex-1 sm:flex-initial px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-950/40 rounded-xl text-xs font-mono font-bold transition-all"
+                >
+                  この数値を確定
+                </button>
+              </div>
             </div>
           )}
 
@@ -727,6 +816,7 @@ export const App: React.FC = () => {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenPresentationDeck={() => setIsPresentationDeckOpen(true)}
         onOpenScenarioComparator={() => setIsScenarioComparatorOpen(true)}
+        onOpenHypothesisLab={() => setIsHypothesisLabOpen(true)}
         onOpenTopology={() => setIsTopologyOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenCopilot={() => setIsCopilotOpen(true)}
@@ -763,6 +853,15 @@ export const App: React.FC = () => {
           setWidgets(appliedWidgets);
           setActiveReasoning(`並行世界比較から「${label}」をワークスペースに適用しました。`);
         }}
+      />
+
+      {/* Hypothesis Stress Lab Modal */}
+      <HypothesisLabModal
+        isOpen={isHypothesisLabOpen}
+        onClose={() => setIsHypothesisLabOpen(false)}
+        widgets={widgets}
+        synapses={synapses}
+        onApplyShock={handleApplyShock}
       />
 
       {/* Cognitive Topology Neural Network Map Modal */}
