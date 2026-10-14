@@ -602,6 +602,7 @@ export const App: React.FC = () => {
             <div className="relative">
               <SpatialCanvas
                 widgets={widgets}
+                synapses={synapses}
                 onUpdateWidget={handleUpdateWidget}
                 onRemoveWidget={handleRemoveWidget}
                 onDuplicateWidget={handleDuplicateWidget}

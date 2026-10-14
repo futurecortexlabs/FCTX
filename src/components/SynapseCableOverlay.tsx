@@ -92,11 +92,13 @@ export const SynapseCableOverlay: React.FC<Props> = ({
     updateCoords();
     window.addEventListener('resize', updateCoords);
     window.addEventListener('scroll', updateCoords, true);
+    window.addEventListener('canvas-transform', updateCoords);
     const interval = setInterval(updateCoords, 800);
 
     return () => {
       window.removeEventListener('resize', updateCoords);
       window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('canvas-transform', updateCoords);
       clearInterval(interval);
     };
   }, [synapses, widgets]);
