@@ -80,6 +80,29 @@ npm run preview
 
 ---
 
+## 🌐 オンライン利用 & GitHub Pages 自動デプロイ (Online Access)
+
+FCTX は完全なクライアントサイド SPA（Single Page Application）であり、バックエンドサーバーを必要としません。
+GitHub Pages や Vercel、Cloudflare Pages にデプロイすることで、**スマートフォンや外出先のPCからいつでもアクセス可能**になります。
+
+### 1. GitHub Pages (GitHub Actions 自動連携)
+本リポジトリには `.github/workflows/deploy.yml` が同梱されています。
+
+1. **変更を GitHub にプッシュ**:
+   ```bash
+   git push origin main
+   ```
+2. **GitHub の設定画面を開く**:
+   - リポジトリの **Settings** タブをクリック
+   - 左メニューの **Pages** を選択
+   - **Build and deployment** の **Source** で **「GitHub Actions」** を選択
+3. **完了**:
+   - `main` ブランチへのプッシュをトリガーに自動ビルド＆デプロイが実行されます。
+   - `https://<あなたのユーザー名>.github.io/FCTX/` で即座にオンライン利用可能になります。
+
+### 2. Vercel / Cloudflare Pages / Netlify
+リポジトリを連携し、ビルドコマンド `npm run build`、出力ディレクトリ `dist` を指定するだけで数秒で公開可能です。
+
 ## 💡 即時体感できるプリセットシナリオ
 
 上部のコマンドバーからワンクリックで以下のシナリオに変形させることができます：
