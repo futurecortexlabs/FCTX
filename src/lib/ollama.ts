@@ -14,6 +14,22 @@ export interface OllamaModelTag {
 }
 
 /**
+ * Automatically resolve endpoint:
+ * In local browser mode on localhost, routes through /api/ollama proxy to bypass CORS automatically.
+ */
+export function resolveEndpoint(endpoint = 'http://localhost:11434'): string {
+  const clean = (endpoint || 'http://localhost:11434').replace(/\/+$/, '');
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+    (clean === 'http://localhost:11434' || clean === 'http://127.0.0.1:11434')
+  ) {
+    return '/api/ollama';
+  }
+  return clean;
+}
+
+/**
  * Fetch available local models from Ollama server
  */
 export async function fetchOllamaModels(endpoint = 'http://localhost:11434'): Promise<{
@@ -22,7 +38,7 @@ export async function fetchOllamaModels(endpoint = 'http://localhost:11434'): Pr
   error?: string;
 }> {
   try {
-    const cleanEndpoint = endpoint.replace(/\/+$/, '');
+    const cleanEndpoint = resolveEndpoint(endpoint);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -122,7 +138,7 @@ export async function generateWidgetsWithOllama(
   if (!endpoint || !model) return null;
 
   try {
-    const cleanEndpoint = endpoint.replace(/\/+$/, '');
+    const cleanEndpoint = resolveEndpoint(endpoint);
     const activeWidgetTitles = existingWidgets.map((w) => w.title).join(', ');
 
     const userPrompt = `既存のアクティブモジュール: ${activeWidgetTitles || 'なし'}
@@ -215,7 +231,7 @@ export async function chatWithOllama(
   workspaceContext: any
 ): Promise<{ text: string; actionSuggestion?: { label: string; prompt: string } }> {
   try {
-    const cleanEndpoint = endpoint.replace(/\/+$/, '');
+    const cleanEndpoint = resolveEndpoint(endpoint);
     const systemPrompt = `あなたは思考共生型ワークスペース「FCTX」のインテリジェント・コパイロットです。ローカルLLM (${model}) として動作しています。
 以下の現在のワークスペース状態(JSON)を精査し、ユーザーからの問いに対して簡潔かつシャープに戦略的助言を行ってください。
 Markdownで見出しや箇条書きを使い、読みやすく返答してください。回答の末尾で、もしワークスペースに追加すべき思考モジュールがあれば「【推奨プロンプト】: ◯◯◯」という形式で1行提案してください。

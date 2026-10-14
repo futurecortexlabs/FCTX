@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MorphicWidget } from '../../types/morphic';
 import { soundEngine } from '../../lib/soundEngine';
-import { Download, FileSpreadsheet, FileText, GitPullRequest, Globe, Printer, Upload, X } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, FolderOpen, GitPullRequest, Globe, HardDrive, Printer, Upload, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -316,6 +316,66 @@ export const SnapshotModal: React.FC<Props> = ({
     }
   };
 
+  // Native File System Operations (.fctx)
+  const handleSaveNativeFile = async () => {
+    soundEngine.playClick();
+    const dataStr = JSON.stringify(widgets, null, 2);
+    if (typeof window !== 'undefined' && window.fctxDesktop) {
+      const res = await window.fctxDesktop.saveWorkspaceFile(dataStr);
+      if (res.success) {
+        soundEngine.playMorph();
+      }
+    } else {
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `fctx_workspace_${new Date().toISOString().slice(0, 10)}.fctx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleOpenNativeFile = async () => {
+    soundEngine.playClick();
+    if (typeof window !== 'undefined' && window.fctxDesktop) {
+      const res = await window.fctxDesktop.loadWorkspaceFile();
+      if (res.success && res.data) {
+        try {
+          const parsed = JSON.parse(res.data);
+          if (Array.isArray(parsed)) {
+            onImportWidgets(parsed);
+            soundEngine.playMorph();
+            onClose();
+          }
+        } catch {
+          setImportError('無効な.fctxファイル形式です');
+        }
+      }
+    } else {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.fctx,.json';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          const text = await file.text();
+          try {
+            const parsed = JSON.parse(text);
+            if (Array.isArray(parsed)) {
+              onImportWidgets(parsed);
+              soundEngine.playMorph();
+              onClose();
+            }
+          } catch {
+            setImportError('無効なファイル形式です');
+          }
+        }
+      };
+      input.click();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative">
@@ -335,6 +395,40 @@ export const SnapshotModal: React.FC<Props> = ({
         </p>
 
         <div className="space-y-4">
+          {/* Local Native File Card */}
+          <div className="bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-slate-950/80 p-3.5 sm:p-4 rounded-2xl border border-indigo-800/60 space-y-2.5 shadow-md">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-100 flex items-center gap-1.5 font-mono">
+                <HardDrive className="w-4 h-4 text-cyan-400" />
+                ローカルファイル直接管理 (.fctx)
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/60">
+                {typeof window !== 'undefined' && window.fctxDesktop?.isElectron ? 'デスクトップネイティブ' : '完全ローカル'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-snug">
+              PCのローカルフォルダにワークスペース全体を独自拡張子 <code className="text-cyan-300 font-mono">.fctx</code> として直接保存・復元できます。
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleSaveNativeFile}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold transition-all shadow-md shadow-cyan-950/50"
+              >
+                <HardDrive className="w-3.5 h-3.5" />
+                <span>.fctx 保存</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenNativeFile}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-mono text-xs font-bold transition-all"
+              >
+                <FolderOpen className="w-3.5 h-3.5 text-indigo-400" />
+                <span>.fctx 開く</span>
+              </button>
+            </div>
+          </div>
+
           {/* Export Actions Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <button
