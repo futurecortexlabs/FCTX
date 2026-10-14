@@ -126,6 +126,7 @@ export interface SynapseLink {
   targetWidgetId: string;
   targetKey: string;
   multiplier?: number;
+  transformFormula?: string;
 }
 
 export interface ThoughtPreset {

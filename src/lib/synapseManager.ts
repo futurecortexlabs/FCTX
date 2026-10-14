@@ -239,9 +239,24 @@ export function propagateSynapseValues(
 
       if (sourceValue === undefined) return;
 
-      // Apply multiplier if present
-      const finalValue =
-        typeof sourceValue === 'number' && link.multiplier ? sourceValue * link.multiplier : sourceValue;
+      // Apply transform formula or multiplier if present
+      let finalValue = sourceValue;
+      if (typeof sourceValue === 'number') {
+        if (link.transformFormula) {
+          try {
+            const expr = link.transformFormula.replace(/\bval\b/g, sourceValue.toString());
+            if (/^[\d\s+\-*/().%]+$/.test(expr)) {
+              // eslint-disable-next-line no-eval
+              const res = Function(`'use strict'; return (${expr})`)();
+              if (isFinite(res)) finalValue = res;
+            }
+          } catch {
+            finalValue = sourceValue * (link.multiplier ?? 1);
+          }
+        } else if (link.multiplier) {
+          finalValue = sourceValue * link.multiplier;
+        }
+      }
 
       // Apply to target widget based on type
       if (newWidget.type === 'simulation') {
