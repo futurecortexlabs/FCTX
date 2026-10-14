@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { soundEngine } from '../lib/soundEngine';
+import { getAiConfig } from '../lib/storage';
 import type { WorkspaceViewMode } from '../types/morphic';
 import {
   Brain,
@@ -108,6 +109,31 @@ export const Header: React.FC<Props> = ({
 
         {/* Desktop Action Controls (hidden on mobile) */}
         <div className="hidden md:flex items-center gap-2 lg:gap-2.5">
+          {/* AI Engine Status Pill */}
+          {(() => {
+            const ai = getAiConfig();
+            const badge =
+              ai.provider === 'ollama'
+                ? `🦙 ${ai.ollamaModel}`
+                : ai.provider === 'gemini'
+                ? '☁️ Gemini'
+                : '⚡ ローカルAI';
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playClick();
+                  onOpenSettings();
+                }}
+                className="text-xs font-mono px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/60 text-cyan-300 flex items-center gap-1.5 transition-all shadow-sm"
+                title="AI推論プロバイダー (クリックして設定変更)"
+              >
+                <Brain className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="truncate max-w-[130px] font-semibold">{badge}</span>
+              </button>
+            );
+          })()}
+
           {/* Active Widgets Pill */}
           <div className="text-xs font-mono px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hidden lg:flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-400" />

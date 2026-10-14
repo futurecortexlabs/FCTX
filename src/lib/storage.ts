@@ -94,6 +94,15 @@ export function saveSettings(settings: WorkspaceSettings): void {
   }
 }
 
+export type AiProvider = 'local_heuristic' | 'ollama' | 'gemini';
+
+export interface AiConfig {
+  provider: AiProvider;
+  geminiApiKey: string;
+  ollamaEndpoint: string;
+  ollamaModel: string;
+}
+
 export function getApiKey(): string {
   try {
     return localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
@@ -109,3 +118,45 @@ export function setApiKey(key: string): void {
     console.error('Failed to save api key', e);
   }
 }
+
+export function getAiConfig(): AiConfig {
+  try {
+    const geminiApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+    const storedProvider = localStorage.getItem('fctx_ai_provider') as AiProvider | null;
+    const ollamaEndpoint = localStorage.getItem('fctx_ollama_endpoint') || 'http://localhost:11434';
+    const ollamaModel = localStorage.getItem('fctx_ollama_model') || 'qwen2.5:7b';
+
+    let provider: AiProvider = 'ollama'; // Default to Ollama since user has local models!
+    if (storedProvider) {
+      provider = storedProvider;
+    } else if (geminiApiKey) {
+      provider = 'gemini';
+    }
+
+    return {
+      provider,
+      geminiApiKey,
+      ollamaEndpoint,
+      ollamaModel,
+    };
+  } catch {
+    return {
+      provider: 'ollama',
+      geminiApiKey: '',
+      ollamaEndpoint: 'http://localhost:11434',
+      ollamaModel: 'qwen2.5:7b',
+    };
+  }
+}
+
+export function saveAiConfig(config: AiConfig): void {
+  try {
+    localStorage.setItem('fctx_ai_provider', config.provider);
+    localStorage.setItem(STORAGE_KEYS.API_KEY, config.geminiApiKey || '');
+    localStorage.setItem('fctx_ollama_endpoint', config.ollamaEndpoint || 'http://localhost:11434');
+    localStorage.setItem('fctx_ollama_model', config.ollamaModel || 'qwen2.5:7b');
+  } catch (e) {
+    console.error('Failed to save AI config', e);
+  }
+}
+

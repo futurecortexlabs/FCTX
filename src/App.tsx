@@ -7,11 +7,12 @@ import {
   saveSynapses,
   loadSettings,
   saveSettings,
-  getApiKey,
+  getAiConfig,
   type WorkspaceSettings,
 } from './lib/storage';
 import { synthesizeWidgetsFromPrompt, SHOWCASE_PRESETS } from './lib/synthesizer';
 import { generateWidgetsWithGemini } from './lib/gemini';
+import { generateWidgetsWithOllama } from './lib/ollama';
 import { soundEngine } from './lib/soundEngine';
 import { Header } from './components/Header';
 import { CortexCommand } from './components/CortexCommand';
@@ -291,15 +292,22 @@ export const App: React.FC = () => {
     setIsSynthesizing(true);
     soundEngine.playMorph();
 
-    const apiKey = getApiKey();
+    const aiConfig = getAiConfig();
     let result: { widgets: MorphicWidget[]; reasoning: string } | null = null;
 
-    if (apiKey) {
-      result = await generateWidgetsWithGemini(prompt, apiKey, widgets);
+    if (aiConfig.provider === 'ollama') {
+      result = await generateWidgetsWithOllama(
+        prompt,
+        aiConfig.ollamaEndpoint,
+        aiConfig.ollamaModel,
+        widgets
+      );
+    } else if (aiConfig.provider === 'gemini' && aiConfig.geminiApiKey) {
+      result = await generateWidgetsWithGemini(prompt, aiConfig.geminiApiKey, widgets);
     }
 
     if (!result) {
-      // Local cognitive synthesizer
+      // Local cognitive heuristic synthesizer fallback
       result = synthesizeWidgetsFromPrompt(prompt, widgets);
     }
 

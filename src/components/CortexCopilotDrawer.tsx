@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { MorphicWidget, SynapseLink } from '../types/morphic';
-import { getApiKey } from '../lib/storage';
+import { getAiConfig } from '../lib/storage';
+import { chatWithOllama } from '../lib/ollama';
 import { soundEngine } from '../lib/soundEngine';
 import {
   Bot,
@@ -235,26 +236,35 @@ export const CortexCopilotDrawer: React.FC<Props> = ({
     setInput('');
     setIsThinking(true);
 
-    const apiKey = getApiKey();
+    const aiConfig = getAiConfig();
     let replyText = '';
     let suggestion: { label: string; prompt: string } | undefined;
 
-    if (apiKey) {
-      try {
-        const workspaceContext = {
-          widgets: widgets.map((w) => ({
-            id: w.id,
-            title: w.title,
-            type: w.type,
-            category: w.category,
-            data: w.data,
-          })),
-          synapses,
-          busState,
-        };
+    const workspaceContext = {
+      widgets: widgets.map((w) => ({
+        id: w.id,
+        title: w.title,
+        type: w.type,
+        category: w.category,
+        data: w.data,
+      })),
+      synapses,
+      busState,
+    };
 
+    if (aiConfig.provider === 'ollama') {
+      const ollamaRes = await chatWithOllama(
+        userText,
+        aiConfig.ollamaEndpoint,
+        aiConfig.ollamaModel,
+        workspaceContext
+      );
+      replyText = ollamaRes.text;
+      suggestion = ollamaRes.actionSuggestion;
+    } else if (aiConfig.provider === 'gemini' && aiConfig.geminiApiKey) {
+      try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${aiConfig.geminiApiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -266,7 +276,7 @@ export const CortexCopilotDrawer: React.FC<Props> = ({
                     {
                       text: `あなたは思考共生型UIワークスペース「FCTX」のインテリジェント・コパイロットです。
 以下の現在のワークスペース状態(JSON)を精査し、ユーザーからの問いに対して簡潔かつシャープに戦略的助言を行ってください。
-Markdownで見出しや箇条書きを使い、読みやすく返答してください。
+Markdownで見出しや箇条書きを使い、読みやすく返答してください。回答の末尾で、もしワークスペースに追加すべき思考モジュールがあれば「【推奨プロンプト】: ◯◯◯」という形式で1行提案してください。
 
 【現在のワークスペース状態】:
 ${JSON.stringify(workspaceContext, null, 2)}
@@ -284,6 +294,15 @@ ${userText}`,
         if (response.ok) {
           const json = await response.json();
           replyText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const match = replyText.match(/【推奨プロンプト】[:：]?\s*([^\n\r]+)/);
+          if (match && match[1]) {
+            const suggestedPrompt = match[1].trim();
+            suggestion = {
+              label: `${suggestedPrompt.slice(0, 18)}${suggestedPrompt.length > 18 ? '...' : ''} を生成`,
+              prompt: suggestedPrompt,
+            };
+            replyText = replyText.replace(/【推奨プロンプト】[:：]?\s*[^\n\r]+/, '').trim();
+          }
         }
       } catch {
         // fallback to offline
@@ -310,6 +329,14 @@ ${userText}`,
     setMessages((prev) => [...prev, cortexMsg]);
   };
 
+  const activeAiConfig = getAiConfig();
+  const aiBadge =
+    activeAiConfig.provider === 'ollama'
+      ? `🦙 ${activeAiConfig.ollamaModel}`
+    : activeAiConfig.provider === 'gemini'
+    ? '☁️ Gemini'
+    : '⚡ ローカル';
+
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] bg-slate-950/95 border-l border-indigo-900/40 backdrop-blur-2xl flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
       {/* Header */}
@@ -321,8 +348,8 @@ ${userText}`,
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm text-slate-100 font-mono tracking-tight">CORTEX COPILOT</span>
-              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60">
-                ACTIVE
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 truncate max-w-[170px]" title={`推論エンジン: ${aiBadge}`}>
+                {aiBadge}
               </span>
             </div>
             <p className="text-[10px] text-slate-400">思考共生ニューラル知性</p>
